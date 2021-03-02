@@ -103,7 +103,7 @@ class _ClosingPageState extends State<ClosingPage> {
 
   getBranch() async {
     String brandID = await CommunFun.getbranchId();
-    Branch currentBranch = await localAPI.getbranchData(brandID);
+    Branch currentBranch = await localAPI.getbranchData();
     String lastCreatedAt =
         DateTime.parse(currentShift.createdAt ?? currentShift.updatedAt)
             .toString();

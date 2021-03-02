@@ -322,7 +322,7 @@ class _SplitBillDialog extends State<SplitBillDialog> {
 
   getTaxs() async {
     var branchid = await CommunFun.getbranchId();
-    List<BranchTax> taxlists = await localAPI.getTaxList(branchid);
+    List<BranchTax> taxlists = await localAPI.getTaxList();
     if (taxlists.length > 0) {
       setState(() {
         taxlist = taxlists;
@@ -923,7 +923,7 @@ class _SplitBillDialog extends State<SplitBillDialog> {
 
   getbranch() async {
     var branchid = await CommunFun.getbranchId();
-    var branch = await localAPI.getbranchData(branchid);
+    var branch = await localAPI.getbranchData();
     return branch;
   }
 
@@ -959,7 +959,7 @@ class _SplitBillDialog extends State<SplitBillDialog> {
   printReceipt(int orderid) async {
     var branchID = await CommunFun.getbranchId();
     var treminalID = await CommunFun.getTeminalKey();
-    Branch branchAddress = await localAPI.getBranchData(branchID);
+    Branch branchAddress = await localAPI.getbranchData();
     List<OrderPayment> orderpaymentdata =
         await localAPI.getOrderpaymentData(orderid, treminalID);
     List<Payments> paymentMethod =

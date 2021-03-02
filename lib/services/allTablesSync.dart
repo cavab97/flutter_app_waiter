@@ -217,7 +217,7 @@ class SyncAPICalls {
     var datetime = await CommunFun.getCurrentDateTime(DateTime.now());
     log.uuid = uuid;
     log.terminal_id = int.parse(terminalId);
-    log.branch_id = int.parse(branchid);
+    //log.branch_id = int.parse(branchid);
     log.isSync = 0;
     log.module_name = moduleName;
     log.description = (updateBy != null

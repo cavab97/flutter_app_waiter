@@ -171,17 +171,18 @@ class _DashboradPageState extends State<DashboradPage>
 
   checkisInit() async {
     await setPermissons();
-    bool databaseExist = await CommunFun.checkDatabaseExit();
-    if (databaseExist == true) {
+    //bool databaseExist = await CommunFun.checkDatabaseExit();
+    // if (databaseExist == true) {
       await getCategoryList();
       //await checkidTableSelected();
       await getAllPrinter();
-    } else {
-      await databaseHelper.initializeDatabase();
-      await getCategoryList();
-      //await checkidTableSelected();
-    }
-    var curre = await Preferences.getStringValuesSF(Constant.CURRENCY);
+    // } else {
+    //   await databaseHelper.initializeDatabase();
+    //   await getCategoryList();
+    //   //await checkidTableSelected();
+    // }
+
+    var curre = 'RM'; //await Preferences.getStringValuesSF(Constant.CURRENCY);
     setState(() {
       currency = curre;
     });
@@ -250,7 +251,7 @@ class _DashboradPageState extends State<DashboradPage>
       var tableddata = json.decode(constantTableData);
       Table_order table = Table_order.fromJson(tableddata);
       List<TablesDetails> tabledata =
-          await localAPI.getTableData(branchid, table.table_id);
+          await localAPI.getTableData(table.table_id);
       table.save_order_id = tabledata[0].saveorderid;
 
       setState(() {
@@ -301,9 +302,9 @@ class _DashboradPageState extends State<DashboradPage>
   }
 
   checkshift() async {
-    var isOpen = await Preferences.getStringValuesSF(Constant.IS_SHIFT_OPEN);
+    var isOpen = await localAPI.getShift();
     setState(() {
-      isShiftOpen = isOpen != null && isOpen == "true" ? true : false;
+      isShiftOpen = isOpen ?? false;
     });
   }
 
@@ -832,7 +833,7 @@ class _DashboradPageState extends State<DashboradPage>
     var branchid = await CommunFun.getbranchId();
 
     List<ProductDetails> product =
-        await localAPI.getProduct(categoryId.toString(), branchid);
+        await localAPI.getProduct(categoryId.toString());
     if (product.length > 0) {
       setState(() {
         // productList = [];
@@ -1333,7 +1334,7 @@ class _DashboradPageState extends State<DashboradPage>
 
   getbranch() async {
     var branchid = await CommunFun.getbranchId();
-    var branch = await localAPI.getbranchData(branchid);
+    var branch = await localAPI.getbranchData();
     setState(() {
       branchData = branch;
     });
@@ -1827,7 +1828,7 @@ class _DashboradPageState extends State<DashboradPage>
   getTaxs() async {
     // List<BranchTax> taxlist = [];
     var branchid = await CommunFun.getbranchId();
-    List<BranchTax> taxlists = await localAPI.getTaxList(branchid);
+    List<BranchTax> taxlists = await localAPI.getTaxList();
 
     if (taxlists.length > 0) {
       setState(() {
@@ -2457,10 +2458,12 @@ class _DashboradPageState extends State<DashboradPage>
                     ]),
                     TableRow(children: [
                       TableCell(
-                        child: !isShiftOpen
-                            ? openShiftButton(context)
-                            : cartITems(),
+                        child:  cartITems(),
                       ),
+                      // TableCell(
+                      //   child: Container()
+                      // ),
+
                       TableCell(
                         child: Container(
                           height: MediaQuery.of(context).size.height * .9,

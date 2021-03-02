@@ -82,7 +82,7 @@ class CommunFun {
   }
 
   static isLogged() async {
-    var loginUser = await Preferences.getStringValuesSF(Constant.IS_LOGIN);
+    var loginUser = await localAPI.getShift();//Preferences.getStringValuesSF(Constant.IS_LOGIN);
     if (loginUser != null) {
       return true;
     } else {
@@ -184,7 +184,7 @@ class CommunFun {
   static Future<double> countServiceCharge(serviceCharge, subtotal) async {
     if (serviceCharge == null) {
       var branchid = await getbranchId();
-      Branch branchData = await localAPI.getBranchData(branchid);
+      Branch branchData = await localAPI.getbranchData();
       serviceCharge = branchData.serviceCharge;
     }
     // else if (service_charge < 0) {
@@ -203,7 +203,7 @@ class CommunFun {
   /*get Service Percentage*/
   static getServiceChargePer() async {
     var branchID = await getbranchId();
-    Branch branchData = await localAPI.getBranchData(branchID);
+    Branch branchData = await localAPI.getbranchData();
     var serviceCharge = branchData.serviceCharge;
     if (serviceCharge != null) {
       return serviceCharge;
@@ -855,7 +855,8 @@ class CommunFun {
   }
 
   static getTeminalKey() async {
-    var terminalId = await Preferences.getStringValuesSF(Constant.TERMINAL_KEY);
+    var terminalId = await localAPI.getTerminalKey();
+
     return terminalId;
   }
 
@@ -1175,7 +1176,7 @@ class CommunFun {
 
   static getTaxs() async {
     var branchid = await CommunFun.getbranchId();
-    List<BranchTax> taxlists = await localAPI.getTaxList(branchid);
+    List<BranchTax> taxlists = await localAPI.getTaxList();
     return taxlists;
   }
 
@@ -1719,7 +1720,7 @@ class CommunFun {
     List<OrderPayment> orderPayments = payments["payments"];
     // branch Data
     var branchID = await getbranchId();
-    Branch branchData = await localAPI.getBranchData(branchID);
+    Branch branchData = await localAPI.getbranchData();
 
     // terminal Data
     Terminal terminalData = await localAPI.getTerminalDetails(terminalID);

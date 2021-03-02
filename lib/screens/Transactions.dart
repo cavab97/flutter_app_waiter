@@ -100,7 +100,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
   getbranch() async {
     var branchid = await CommunFun.getbranchId();
-    var branch = await localAPI.getbranchData(branchid);
+    var branch = await localAPI.getbranchData();
     var curre = await Preferences.getStringValuesSF(Constant.CURRENCY);
     setState(() {
       currency = curre;
@@ -592,7 +592,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           await localAPI.getOrderModifire(order.app_id);
       var branchid = await CommunFun.getbranchId();
       List<TablesDetails> tabledata =
-          await localAPI.getTableData(branchid, order.table_id);
+          await localAPI.getTableData(order.table_id);
       PrintReceipt printKOT = PrintReceipt();
       printKOT.checkReceiptPrint(
           (order.pax != null ? order.pax.toString() : 0.toString()),

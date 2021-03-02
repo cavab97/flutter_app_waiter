@@ -6,6 +6,7 @@ import 'package:mcncashier/routes.dart';
 import 'package:mcncashier/screens/SplashScreen.dart';
 import 'package:mcncashier/theme/theme.dart';
 import 'package:wifi/wifi.dart';
+import 'package:mcncashier/components/constant.dart';
 
 import 'httpServer/slave.dart';
 
@@ -71,8 +72,8 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
       home: SplashScreen(),
       title: 'cashierApp',
       theme: appTheme(),
-      // initialRoute:
-      //     widget.islogin ? Constant.DashboardScreen : Constant.TerminalScreen,
+      initialRoute:
+        widget.islogin ? Constant.SelectTableScreen : Constant.PINScreen,
       routes: routes,
     );
   }

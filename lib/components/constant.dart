@@ -112,7 +112,7 @@ class Constant {
   static final String PINScreen = "/PINPage";
   static final String DashboardScreen = "/Dashboard";
   static final String TransactionScreen = "/TansactionsPage";
-  static final String TerminalScreen = "/TerminalKeyPage";
+  //static final String TerminalScreen = "/TerminalKeyPage";
   static final String SelectTableScreen = "/TableSelection";
   static final String SettingsScreen = "/Settings";
   static final String WebOrderPages = "/WebOrders";

@@ -87,7 +87,7 @@ class PayInOutDailogstate extends State<PayInOutDailog> {
 
   getbranch() async {
     var branchid = await CommunFun.getbranchId();
-    var branch = await localAPI.getbranchData(branchid);
+    var branch = await localAPI.getbranchData();
     setState(() {
       branchData = branch;
     });

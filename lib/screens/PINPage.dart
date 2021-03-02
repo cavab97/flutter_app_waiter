@@ -38,12 +38,12 @@ class _PINPageState extends State<PINPage> {
   }
 
   checkAlreadyclockin() async {
-    var isClockin = await Preferences.getStringValuesSF(Constant.IS_CHECKIN);
-    if (isClockin != null) {
-      setState(() {
-        isCheckIn = isClockin == "true" ? true : false;
-      });
-    }
+    var isClockin = await localAPI.getShift();
+
+    setState(() {
+      isCheckIn = isClockin ?? false;
+    });
+
     await SyncAPICalls.logActivity(
         "check in/out", "Opened check in out page", "checkIn", 1);
   }
@@ -104,7 +104,7 @@ class _PINPageState extends State<PINPage> {
           checkIn.localID = await CommunFun.getLocalID();
           checkIn.terminalId = int.parse(terminalId);
           checkIn.userId = user.id;
-          checkIn.branchId = int.parse(branchid);
+          //checkIn.branchId = int.parse(branchid);
           checkIn.status = "IN";
           checkIn.timeInOut = date.toString();
           checkIn.createdAt = date.toString();
@@ -167,7 +167,7 @@ class _PINPageState extends State<PINPage> {
         checkIn.localID = await CommunFun.getLocalID();
         checkIn.terminalId = int.parse(terminalId);
         checkIn.userId = user["id"];
-        checkIn.branchId = int.parse(branchid);
+        //checkIn.branchId = int.parse(branchid);
         checkIn.status = "OUT";
         checkIn.timeInOut = date.toString();
         checkIn.sync = 0;
@@ -362,11 +362,11 @@ class _PINPageState extends State<PINPage> {
                               padding: EdgeInsets.only(
                                   right: SizeConfig.safeBlockVertical * 5),
                               onPressed: () async {
-                                await Navigator.pushNamedAndRemoveUntil(
-                                  context,
-                                  Constant.TerminalScreen,
-                                  (Route<dynamic> route) => false,
-                                );
+                                // await Navigator.pushNamedAndRemoveUntil(
+                                //   context,
+                                //   Constant.TerminalScreen,
+                                //   (Route<dynamic> route) => false,
+                                // );
                               },
                               icon: Icon(
                                 Icons.close,

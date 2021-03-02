@@ -68,8 +68,7 @@ class LocalAPI {
 
       parts = address.split('.');
       parts[3] = '239';
-      print(parts);
-      print('http://${parts.join(".")}:4040');
+
       return 'http://${parts.join(".")}:4040';
     } catch (error) {
       print("getMasterURL err : " +error);
@@ -83,7 +82,7 @@ class LocalAPI {
 
       var url = await getMasterURL();
       var path = url + '/api/marslab/mine/logs';
-        print('a');
+
       var logData = {
         'module_name': log.module_name,
         'description': log.description,
@@ -92,16 +91,12 @@ class LocalAPI {
         'user_id': log.uuid,
         'updated_by': log.updated_by
       };
-      print('b');
-      print(path);
+
       Response response = await Dio().post(
         path,
         data: logData,
         options: Options(contentType: "application/json")
       );
-
-      print('c');
-      print(response.data.toString());
 
       return pick(response.data).asIntOrNull();
 
@@ -146,48 +141,60 @@ class LocalAPI {
   }
 
   Future<List<Category>> getAllCategory() async {
-    var branchID = await CommunFun.getbranchId();
-    var query = "select * from category left join category_branch on " +
-        " category_branch.category_id = category.category_id AND category_branch.status=1 where " +
-        " category_branch.branch_id =" +
-        branchID.toString() +
-        " AND category.status = 1 order by category_branch.display_order ASC";
 
-    List<Map> res = await DatabaseHelper.dbHelper.getDatabse().rawQuery(query);
-    List<Category> list =
-        res.isNotEmpty ? res.map((c) => Category.fromJson(c)).toList() : [];
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/categories';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Category> list =
+        body.isNotEmpty ? body.map((c) => Category.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
-  Future<List<ProductDetails>> getProduct(String id, String branchID) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    var query = "SELECT product.*,price_type.name as price_type_Name,asset.base64,product_store_inventory.qty,box.product_id as box_pId, category_attribute.name as attr_cat ,modifier.name as modifire_Name, product_branch.out_of_stock FROM `product` " +
-        " LEFT JOIN product_category on product_category.product_id = product.product_id AND product_category.status = 1" +
-        " LEFT JOIN product_branch on product_branch.product_id = product.product_id AND product_branch.status = 1" +
-        " LEFT JOIN price_type on price_type.pt_id = product.price_type_id AND price_type.status = 1 " +
-        " LEFT JOIN asset on asset.asset_type = 1 AND asset.asset_type_id = product.product_id AND asset.status = 1" +
-        " LEFT JOIN product_attribute on product_attribute.product_id = product.product_id and product_attribute.status = 1" +
-        " LEFT JOIN category_attribute on category_attribute.ca_id = product_attribute.ca_id and category_attribute.status = 1" +
-        " LEFT JOIN attributes on attributes.attribute_id = product_attribute.attribute_id and attributes.status = 1" +
-        " LEFT JOIN product_modifier on  product_modifier.product_id = product.product_id AND product_modifier.status = 1 " +
-        " LEFT JOIN modifier on modifier.modifier_id = product_modifier.modifier_id AND modifier.status = 1 " +
-        " LEFT JOIN product_store_inventory  ON  product_store_inventory.product_id = product.product_id and product_store_inventory.status = 1 " +
-        " LEFT JOIN box ON box.product_id = product.product_id and box.status = 1 " +
-        " where product_category.category_id = " +
-        id.toString() +
-        " AND product_branch.branch_id = " +
-        branchID.toString() +
-        " AND product.status = 1 AND product.has_setmeal = 0 GROUP By product.product_id";
-    var res = await db.rawQuery(query);
-    List<ProductDetails> list = res.length > 0
-        ? res.map((c) => ProductDetails.fromJson(c)).toList()
-        : [];
+  Future<List<ProductDetails>> getProduct(String id) async {
 
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/categoryproducts';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'categoryid' : id
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<ProductDetails> list =
+        body.isNotEmpty ? body.map((c) => ProductDetails.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<ProductDetails>> getAllProduct(String branchID) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
+    /* Database db = DatabaseHelper.dbHelper.getDatabse();
     String query = "SELECT product.product_id, product.name, product.has_inventory, product.price, product.sku, base64, category_attribute.name as attr_cat, product_store_inventory.qty, product_branch.out_of_stock FROM `product` " +
         " LEFT join asset on asset.asset_type = 1 AND asset.asset_type_id = product.product_id " +
         " LEFT JOIN product_branch ON product_branch.product_id = product.product_id AND product_branch.status = 1" +
@@ -201,7 +208,29 @@ class LocalAPI {
     List<ProductDetails> list = res.length > 0
         ? res.map((c) => ProductDetails.fromJson(c)).toList()
         : [];
-    return list;
+    return list; */
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/products';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<ProductDetails> list =
+        body.isNotEmpty ? body.map((c) => ProductDetails.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    } 
   }
 
   Future<bool> updateProductWithStock(
@@ -362,26 +391,29 @@ class LocalAPI {
   }
 
   Future<int> insertTableOrder(Table_order tableOrder) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String qry = "SELECT * from table_order where table_id =" +
-        tableOrder.table_id.toString();
-    var res = await DatabaseHelper.dbHelper.getDatabse().rawQuery(qry);
-    List<Table_order> list =
-        res.isNotEmpty ? res.map((c) => Table_order.fromJson(c)).toList() : [];
-    var result;
-    if (list.length > 0) {
-      result = await db.update("table_order", tableOrder.toJson(),
-          where: 'table_id = ?', whereArgs: [tableOrder.table_id]);
-    } else {
-      result = await db.insert("table_order", tableOrder.toJson());
-    }
-    /* await SyncAPICalls.logActivity(
-        "Tables",
-        list.length > 0 ? "Update table Order" : "Insert table Order",
-        "table_order",
-        table_order.table_id); */
+    try {
 
-    return result;
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/tableorders';
+
+      var tableOrderData = {
+        'table_id': tableOrder.table_id,
+        'save_order_id': tableOrder.save_order_id,
+        'service_charge': tableOrder.service_charge,
+      };
+
+      Response response = await Dio().post(
+        path,
+        data: tableOrderData,
+        options: Options(contentType: "application/json")
+      );
+
+      return pick(response.data).asIntOrNull();
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<int> updateTablePax(Table_order tableOrder) async {
@@ -449,10 +481,24 @@ class LocalAPI {
   }
 
   Future deleteTableOrder(tableID) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    await db.delete("table_order", where: 'table_id = ?', whereArgs: [tableID]);
-    /* await SyncAPICalls.logActivity(
-        "table Order", "delete table Order", "table_order", tableID); */
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/tableorders';
+
+      Response response = await Dio().delete(
+        path,
+        queryParameters: {
+          'id': tableID
+        },
+        options: Options(contentType: "application/json")
+      );
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future deleteSaveOrder(id) async {
@@ -462,6 +508,7 @@ class LocalAPI {
       /* await SyncAPICalls.logActivity(
           "delete save Order", "delete save Order", "save_order", id); */
     }
+    
   }
 
   Future updateTableIdInOrder(orderid, tableid) async {
@@ -541,7 +588,7 @@ class LocalAPI {
   }
 
   Future<List<Attribute_Data>> getProductDetails(productId) async {
-    String qry = " SELECT product.product_id, category_attribute.name as attr_name,attributes.ca_id, " +
+    /* String qry = " SELECT product.product_id, category_attribute.name as attr_name,attributes.ca_id, " +
         " group_concat(product_attribute.price) as attr_types_price,group_concat(attributes.name) as attr_types ,group_concat(attributes.attribute_id) as attributeId , group_concat(attributes.is_default) as is_default" +
         " FROM product LEFT JOIN product_attribute on product_attribute.product_id = product.product_id and product_attribute.status = 1" +
         " LEFT JOIN category_attribute on category_attribute.ca_id = product_attribute.ca_id and category_attribute.status = 1" +
@@ -556,7 +603,33 @@ class LocalAPI {
         ? res.map((c) => Attribute_Data.fromJson(c)).toList()
         : [];
 
-    return list;
+    return list; */
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/product/details';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'productid': productId
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Attribute_Data> list =
+        body.isNotEmpty ? body.map((c) => Attribute_Data.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+
   }
 
   Future<List<ModifireData>> getProductModifeir(productId) async {
@@ -713,6 +786,7 @@ class LocalAPI {
         ? res.map((c) => MSTCartdetails.fromJson(c)).toList()
         : [];
     return list;
+    
   }
 
   Future<bool> updateItemDiscount(MSTCartdetails product, int cartID,
@@ -876,30 +950,58 @@ class LocalAPI {
   }
 
   Future<List<SaveOrder>> getSaveOrder(id) async {
-    String qry = "SELECT * from save_order WHERE id =" + id.toString();
-    List<Map> res = await DatabaseHelper.dbHelper.getDatabse().rawQuery(qry);
-    List<SaveOrder> list =
-        res.isNotEmpty ? res.map((c) => SaveOrder.fromJson(c)).toList() : [];
-    /* await SyncAPICalls.logActivity(
-        "product", "get save_order", "save_order", id); */
 
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/saveorders';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'id': id
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<SaveOrder> list =
+        body.isNotEmpty ? body.map((c) => SaveOrder.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
-  Future<List<TablesDetails>> getTableData(branchid, tableID) async {
-    var query =
-        "SELECT tables.*, table_order.save_order_id,table_order.number_of_pax from tables " +
-            " LEFT JOIN table_order on table_order.table_id = " +
-            tableID.toString() +
-            " WHERE tables.table_id= " +
-            tableID.toString() +
-            " AND tables.status = 1 AND branch_id = " +
-            branchid;
-    var res = await DatabaseHelper.dbHelper.getDatabse().rawQuery(query);
-    List<TablesDetails> list = res.isNotEmpty
-        ? res.map((c) => TablesDetails.fromJson(c)).toList()
-        : [];
-    return list;
+  Future<List<TablesDetails>> getTableData(tableID) async {
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/tables';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'id': tableID
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<TablesDetails> list =
+        body.isNotEmpty ? body.map((c) => TablesDetails.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<MST_Cart>> getCurrentCart(cartID) async {
@@ -923,15 +1025,28 @@ class LocalAPI {
   }
 
   Future<List<Payments>> getPaymentMethods() async {
-    var query = "SELECT payment.* , base64  from payment " +
-        " LEFT join asset on asset.asset_type = 3 AND asset.asset_type_id = payment.payment_id " +
-        " WHERE payment.status = 1 GROUP BY payment.payment_id";
-    //var query = "SELECT *  from payment WHERE status = 1";
-    var res = await DatabaseHelper.dbHelper.getDatabse().rawQuery(query);
-    List<Payments> list =
-        res.isNotEmpty ? res.map((c) => Payments.fromJson(c)).toList() : [];
 
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/paymentmethods';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Payments> list =
+        body.isNotEmpty ? body.map((c) => Payments.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<Orders> getcurrentOrders(orderid, terminalID) async {
@@ -1351,26 +1466,50 @@ class LocalAPI {
   }
 
   Future<MST_Cart> getCartData(cartid) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    var cartdata =
-        await db.query('mst_cart', where: 'id = ?', whereArgs: [cartid]);
-    List<MST_Cart> list = cartdata.isNotEmpty
-        ? cartdata.map((c) => MST_Cart.fromJson(c)).toList()
-        : [];
-    if (list.length > 0) {
-      return list[0];
-    } else
-      return new MST_Cart();
+
+      try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/cart';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'id': cartid
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      MST_Cart cart =  MST_Cart.fromJson(jsonDecode(response.data));
+
+      return cart;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
-  Future<Branch> getbranchData(branchID) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    var cartdata = await db.query('branch',
-        where: 'branch_id = ?', whereArgs: [branchID.toString()]);
-    List<Branch> list = cartdata.isNotEmpty
-        ? cartdata.map((c) => Branch.fromJson(c)).toList()
-        : [];
-    return list[0];
+  Future<Branch> getbranchData() async { 
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/branches/current';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      Branch currentBranch = Branch.fromJson(jsonDecode(response.data));
+
+      return currentBranch;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<Voucher> getvoucher(voucherid) async {
@@ -1400,23 +1539,62 @@ class LocalAPI {
     return hitid;
   }
 
-  Future<List<BranchTax>> getTaxList(branchid) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String qry = "SELECT * from branch_tax WHERE branch_id = " +
-        branchid.toString() +
-        " AND status = 1";
-    var tax = await db.rawQuery(qry);
-    List<BranchTax> list =
-        tax.isNotEmpty ? tax.map((c) => BranchTax.fromJson(c)).toList() : [];
-    return list;
+  Future<List<BranchTax>> getTaxList() async {
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/taxes';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<BranchTax> list =
+        body.isNotEmpty ? body.map((c) => BranchTax.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<Tax>> getTaxName(taxId) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
+    /* Database db = DatabaseHelper.dbHelper.getDatabse();
     var tax = await db.query('tax');
     List<Tax> list =
         tax.isNotEmpty ? tax.map((c) => Tax.fromJson(c)).toList() : [];
-    return list;
+    return list; */
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/taxes';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'id': 'taxId'
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Tax> list =
+        body.isNotEmpty ? body.map((c) => Tax.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<Payments>> getOrderpaymentmethod(orderid, terminalid) async {
@@ -1649,7 +1827,7 @@ class LocalAPI {
     return 1;
   }
 
-  Future<Branch> getBranchData(branchID) async {
+  /* Future<Branch> getBranchData(branchID) async {
     Database db = DatabaseHelper.dbHelper.getDatabse();
     var result =
         await db.query("branch", where: 'branch_id = ?', whereArgs: [branchID]);
@@ -1657,7 +1835,7 @@ class LocalAPI {
         result.isNotEmpty ? result.map((c) => Branch.fromJson(c)).toList() : [];
 
     return list[0];
-  }
+  } */
 
   // 1 For New,2 For Ongoing,3 For cancelled,4 For Completed,5 For Refunded
   Future updateOrderStatus(Orders orderdata) async {
@@ -1701,13 +1879,31 @@ class LocalAPI {
   }
 
   Future<List<Table_order>> getTableOrders(tableid) async {
-    String qry =
-        "SELECT * from table_order where table_id = " + tableid.toString();
-    var tableList = await DatabaseHelper.dbHelper.getDatabse().rawQuery(qry);
-    List<Table_order> list = tableList.isNotEmpty
-        ? tableList.map((c) => Table_order.fromJson(c)).toList()
-        : [];
-    return list;
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/tableorders';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'tableid': tableid
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Table_order> list =
+        body.isNotEmpty ? body.map((c) => Table_order.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<User>> getUser() async {
@@ -1767,14 +1963,39 @@ class LocalAPI {
   }
 
   Future<List<Printer>> getPrinter(productID) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
+    /* Database db = DatabaseHelper.dbHelper.getDatabse();
     String qry =
         "SELECT * from printer where printer.printer_id = (Select printer_id from product_branch WHERE product_branch.product_id = $productID)";
     var result = await db.rawQuery(qry);
     List<Printer> list = result.isNotEmpty
         ? result.map((c) => Printer.fromJson(c)).toList()
         : [];
-    return list;
+    return list; */
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/printers';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'productid': productID
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Printer> list =
+        body.isNotEmpty ? body.map((c) => Printer.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<Printer>> getAllPrinter() async {
@@ -2318,57 +2539,58 @@ class LocalAPI {
   }
 
   Future<List<SetMeal>> getMealsData(branchid) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String qry = "select setmeal.* ,  base64  from setmeal " +
-        " LEFT join setmeal_branch on setmeal_branch_id =" +
-        branchid +
-        " AND setmeal_branch.setmeal_id = setmeal.setmeal_id " +
-        " LEFT join setmeal_product on setmeal_product.setmeal_id = setmeal.setmeal_id " +
-        " LEFT join asset on asset.asset_type = 2 AND asset.asset_type_id = setmeal.setmeal_id where setmeal.status = 1  GROUP by setmeal.setmeal_id ";
-    var mealList = await db.rawQuery(qry);
-    List<SetMeal> list = mealList.isNotEmpty
-        ? mealList.map((c) => SetMeal.fromJson(c)).toList()
-        : [];
 
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/meals';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<SetMeal> list =
+        body.isNotEmpty ? body.map((c) => SetMeal.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<SetMealProduct>> getMealsProductData(setmealid) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String qry =
-        "SELECT setmeal_product.*,replace(asset.base64,'data:image/jpg;base64,','') as base64,product.name  FROM setmeal_product " +
-            " LEFT JOIN product ON product.product_id = setmeal_product.product_id AND product.status = 1 " +
-            " LEFT join asset on asset.asset_type = 1 AND asset.asset_type_id = setmeal_product.product_id AND asset.status = 1 " +
-            " WHERE setmeal_product.setmeal_id = " +
-            setmealid.toString() +
-            " AND setmeal_product.status = 1 " +
-            " GROUP by setmeal_product.setmeal_product_id";
 
-    var mealList = await db.rawQuery(qry);
-    List<SetMealProduct> list = mealList.isNotEmpty
-        ? mealList.map((c) => SetMealProduct.fromJson(c)).toList()
-        : [];
-    /* await SyncAPICalls.logActivity(
-        "Meals product List", "get Meals product List", "setmeal", setmealid); */
-    for (var i = 0; i < list.length; i++) {
-      var attrQry = "SELECT product.product_id, category_attribute.name as attr_name,attributes.ca_id, " +
-          " group_concat(product_attribute.price) as attr_types_price,group_concat(attributes.name) as attr_types ,group_concat(attributes.attribute_id) as attributeId,group_concat(attributes.is_default) as is_default " +
-          " FROM product LEFT JOIN product_attribute on product_attribute.product_id = product.product_id and product_attribute.status = 1 " +
-          " LEFT JOIN category_attribute on category_attribute.ca_id = product_attribute.ca_id and category_attribute.status = 1 " +
-          " LEFT JOIN attributes on attributes.attribute_id = product_attribute.attribute_id and attributes.status = 1 " +
-          " WHERE product.product_id =  " +
-          list[i].productId.toString() +
-          " GROUP by category_attribute.ca_id";
-      List<Map> res = await db.rawQuery(attrQry);
-      List<Attribute_Data> attrlist = res.length > 0
-          ? res.map((c) => Attribute_Data.fromJson(c)).toList()
-          : [];
-      if (attrlist.length > 0) {
-        list[i].attributeDetails = jsonEncode(attrlist);
-      }
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/mealproducts';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      print(response.data);
+      print(jsonEncode(body));
+
+      List<SetMealProduct> list =
+        body.isNotEmpty ? body.map((c) => SetMealProduct.fromJson(c)).toList() : [];
+
+        print(jsonEncode(list));
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
     }
-
-    return list;
   }
 
   Future<List<Drawerdata>> getPayinOutammount(shiftid, [filtertime]) async {
@@ -2884,6 +3106,25 @@ class LocalAPI {
       return list[0].app_id;
     } else {
       return 0;
+    }
+  }
+
+  Future<String> getTerminalKey() async {
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/terminal/id';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      return pick(response.data).asStringOrNull();
+
+    } catch (error) {
+      print(error);
+      rethrow;
     }
   }
 

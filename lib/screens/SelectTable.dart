@@ -87,13 +87,13 @@ class _SelectTablePageState extends State<SelectTablePage>
   }
 
   checkisInit() async {
-    var isInit = await CommunFun.checkDatabaseExit();
-    if (isInit == true) {
+    //var isInit = await CommunFun.checkDatabaseExit();
+    // if (isInit == true) {
       afterInit();
-    } else {
-      await databaseHelper.initializeDatabase();
-      afterInit();
-    }
+    // } else {
+    //   await databaseHelper.initializeDatabase();
+    //   afterInit();
+    // }
   }
 
   getReservationList() async {

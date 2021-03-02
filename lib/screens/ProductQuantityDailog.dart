@@ -200,7 +200,7 @@ class _ProductQuantityDailogState extends State<ProductQuantityDailog> {
 
   getTaxs() async {
     var branchid = await CommunFun.getbranchId();
-    List<BranchTax> taxlists = await localAPI.getTaxList(branchid);
+    List<BranchTax> taxlists = await localAPI.getTaxList();
     if (taxlists.length > 0) {
       setState(() {
         taxlist = taxlists;
