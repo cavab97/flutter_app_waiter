@@ -65,11 +65,7 @@ class _ReservationMgmtState extends State<ReservationMgmt> {
     int tID = int.tryParse(await CommunFun.getTeminalKey());
     String branchID = await CommunFun.getbranchId();
     List<TablesDetails> tables = await localAPI.getTables(branchID);
-    List<Reservation> resList = await localAPI.getReservationList(
-      tID,
-      DateFormat('yyyy-MM-dd HH:mm:ss').format(fromDateTime),
-      DateFormat('yyyy-MM-dd HH:mm:ss').format(toDateTime),
-    );
+    List<Reservation> resList = await localAPI.getReservationList();
 
     resList.sort(
       (Reservation a, Reservation b) => a.resFrom.compareTo(b.resFrom),

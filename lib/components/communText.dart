@@ -1349,86 +1349,97 @@ class CommunFun {
 
   static addReservationToCart(Reservation reservation, Table_order tableOrder,
       SaveOrder orderData) async {
-    String branchid = await CommunFun.getbranchId();
-    MST_Cart cart = new MST_Cart();
-    User loginUser = await CommunFun.getuserDetails();
-    Customer customer = await CommunFun.getCustomerData();
-    //Customer customer = await localAPI.getCustomerData(reservation.customerID);
-    List<MSTCartdetails> reservationProductList =
-        await localAPI.getReservationItems(reservation.resNo);
+    try {
+        String branchid = await CommunFun.getbranchId();
+        MST_Cart cart = new MST_Cart();
+        User loginUser = await CommunFun.getuserDetails();
+        Customer customer = await CommunFun.getCustomerData();
+        //Customer customer = await localAPI.getCustomerData(reservation.customerID);
+        List<MSTCartdetails> reservationProductList =
+            await localAPI.getReservationItems(reservation.resNo);
 
-    List<MSTSubCartdetails> subDetail =
-        await localAPI.getSubDetail(reservation.resNo);
-    double subTotal = 0.00;
-    double qty = 0;
-    for (int i = 0; i < reservationProductList.length; i++) {
-      subTotal += reservationProductList[i].productDetailAmount;
-      qty += reservationProductList[i].productQty;
+        List<MSTSubCartdetails> subDetail =
+            await localAPI.getSubDetail(reservation.resNo);
+        double subTotal = 0.00;
+        double qty = 0;
+        for (int i = 0; i < reservationProductList.length; i++) {
+          subTotal += reservationProductList[i].productDetailAmount;
+          qty += reservationProductList[i].productQty;
+        }
+        var serviceCharge =
+            await CommunFun.countServiceCharge(tableOrder.service_charge, subTotal);
+        var serviceChargePer = tableOrder.service_charge == null
+            ? await CommunFun.getServiceChargePer()
+            : tableOrder.service_charge;
+        var totalTax = await CommunFun.countTax(subTotal);
+        var grandTotal =
+            await CommunFun.countGrandtotal(subTotal, serviceCharge, taxvalues, 0);
+        cart.user_id = customer.customerId;
+        cart.branch_id = int.parse(branchid);
+        cart.sub_total = subTotal;
+        cart.discountAmount = 0;
+        cart.serviceCharge = CommunFun.getDoubleValue(serviceCharge);
+        cart.serviceChargePercent = CommunFun.getDoubleValue(serviceChargePer);
+        cart.table_id = tableOrder.table_id;
+        cart.discountType = 0;
+        cart.total_qty = qty;
+        cart.tax = double.parse(taxvalues.toStringAsFixed(2));
+        cart.source = 2;
+        cart.tax_json = json.encode(totalTax);
+        cart.grand_total = double.parse(grandTotal.toStringAsFixed(2));
+        cart.customer_terminal = customer != null ? customer.terminalId : 0;
+        cart.created_at = await CommunFun.getCurrentDateTime(DateTime.now());
+        cart.created_by = loginUser.id;
+        cart.localID = await CommunFun.getLocalID();
+        int cartID = await localAPI.insertReservationToCart(cart);
+        for (int i = 0; i < reservationProductList.length; i++) {
+          reservationProductList[i].cartId = cartID;
+          reservationProductList[i].cart_detail = jsonEncode(cart);
+        }
+        orderData.createdAt = await CommunFun.getCurrentDateTime(DateTime.now());
+        orderData.numberofPax = reservation.pax;
+        orderData.cartId = cartID;
+        await localAPI.insertSaveOrders(orderData, tableOrder.table_id);
+        await localAPI.reservationToCartProduct(
+          reservationProductList,
+          subDetail,
+          reservation.resNo,
+        );
+    } 
+    catch (error) {
+      print(error);
+      rethrow;
     }
-    var serviceCharge =
-        await CommunFun.countServiceCharge(tableOrder.service_charge, subTotal);
-    var serviceChargePer = tableOrder.service_charge == null
-        ? await CommunFun.getServiceChargePer()
-        : tableOrder.service_charge;
-    var totalTax = await CommunFun.countTax(subTotal);
-    var grandTotal =
-        await CommunFun.countGrandtotal(subTotal, serviceCharge, taxvalues, 0);
-    cart.user_id = customer.customerId;
-    cart.branch_id = int.parse(branchid);
-    cart.sub_total = subTotal;
-    cart.discountAmount = 0;
-    cart.serviceCharge = CommunFun.getDoubleValue(serviceCharge);
-    cart.serviceChargePercent = CommunFun.getDoubleValue(serviceChargePer);
-    cart.table_id = tableOrder.table_id;
-    cart.discountType = 0;
-    cart.total_qty = qty;
-    cart.tax = double.parse(taxvalues.toStringAsFixed(2));
-    cart.source = 2;
-    cart.tax_json = json.encode(totalTax);
-    cart.grand_total = double.parse(grandTotal.toStringAsFixed(2));
-    cart.customer_terminal = customer != null ? customer.terminalId : 0;
-    cart.created_at = await CommunFun.getCurrentDateTime(DateTime.now());
-    cart.created_by = loginUser.id;
-    cart.localID = await CommunFun.getLocalID();
-    int cartID = await localAPI.insertReservationToCart(cart);
-    for (int i = 0; i < reservationProductList.length; i++) {
-      reservationProductList[i].cartId = cartID;
-      reservationProductList[i].cart_detail = jsonEncode(cart);
-    }
-    orderData.createdAt = await CommunFun.getCurrentDateTime(DateTime.now());
-    orderData.numberofPax = reservation.pax;
-    orderData.cartId = cartID;
-    await localAPI.insertSaveOrders(orderData, tableOrder.table_id);
-    await localAPI.reservationToCartProduct(
-      reservationProductList,
-      subDetail,
-      reservation.resNo,
-    );
   }
 
   static addReservationItem(ProductDetails productItem) async {
-    User loginUser = await CommunFun.getuserDetails();
-    Printer printer = await CommunFun.getPrinter(productItem);
-    MSTCartdetails cartdetails = new MSTCartdetails();
-    cartdetails.productId = productItem.productId;
-    cartdetails.productName = productItem.name;
-    cartdetails.productSecondName = productItem.name_2;
-    cartdetails.productPrice = productItem.price;
-    cartdetails.productDetailAmount = productItem.price;
-    cartdetails.productQty = 1.0;
-    cartdetails.productNetPrice = productItem.oldPrice;
-    cartdetails.createdBy = loginUser.id;
-    cartdetails.cart_detail = jsonEncode(productItem);
-    cartdetails.discountAmount = 0;
-    cartdetails.remark = "";
-    cartdetails.issetMeal = 0;
-    cartdetails.hasRacManagemant = productItem.hasRacManagemant;
-    cartdetails.taxValue = taxvalues;
-    cartdetails.printer_id = printer != null ? printer.printerId : 0;
-    cartdetails.createdAt = await CommunFun.getLocalID();
+    try {
+      User loginUser = await CommunFun.getuserDetails();
+      Printer printer = await CommunFun.getPrinter(productItem);
+      MSTCartdetails cartdetails = new MSTCartdetails();
+      cartdetails.productId = productItem.productId;
+      cartdetails.productName = productItem.name;
+      cartdetails.productSecondName = productItem.name_2;
+      cartdetails.productPrice = productItem.price;
+      cartdetails.productDetailAmount = productItem.price;
+      cartdetails.productQty = 1.0;
+      cartdetails.productNetPrice = productItem.oldPrice;
+      cartdetails.createdBy = loginUser.id;
+      cartdetails.cart_detail = jsonEncode(productItem);
+      cartdetails.discountAmount = 0;
+      cartdetails.remark = "";
+      cartdetails.issetMeal = 0;
+      cartdetails.hasRacManagemant = productItem.hasRacManagemant;
+      cartdetails.taxValue = taxvalues;
+      cartdetails.printer_id = printer != null ? printer.printerId : 0;
+      cartdetails.createdAt = await CommunFun.getLocalID();
     //await localAPI.addintoCartDetails(cartdetails);
     //print(detailID);
     return cartdetails;
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   static getCustomer() async {

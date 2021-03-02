@@ -302,7 +302,7 @@ class DrawerWidState extends State<DrawerWid> {
   Widget build(BuildContext context) {
     SizeConfig().init(context);
     return Container(
-      width: MediaQuery.of(context).size.width / 3.2,
+      width: MediaQuery.of(context).size.width / 4.5,
       height: MediaQuery.of(context).size.height,
       padding: EdgeInsets.only(
         top: 20,
@@ -319,11 +319,15 @@ class DrawerWidState extends State<DrawerWid> {
               children: <Widget>[
                 nameBtn(),
                 SizedBox(width: SizeConfig.safeBlockVertical * 3),
-                checkoutbtn(),
               ],
             ),
             CommunFun.divider(),
-            ListTile(
+            Row(
+              children: <Widget>[
+                checkoutbtn(),
+              ],
+            ),
+            /* ListTile(
               onTap: () async {
                 await SyncAPICalls.logActivity(
                     "sidebar", "Select transaction menu", "sidebar", 1);
@@ -338,8 +342,8 @@ class DrawerWidState extends State<DrawerWid> {
                 Strings.transaction,
                 style: Styles.drawerText(),
               ),
-            ),
-            ListTile(
+            ), */
+            /* ListTile(
               onTap: () async {
                 Navigator.of(context).pop();
                 await SyncAPICalls.logActivity(
@@ -353,8 +357,8 @@ class DrawerWidState extends State<DrawerWid> {
                 size: SizeConfig.safeBlockVertical * 5,
               ),
               title: Text(Strings.outOfStock, style: Styles.drawerText()),
-            ),
-            ListTile(
+            ), */
+            /* ListTile(
               onTap: () async {
                 await SyncAPICalls.logActivity(
                     "sidebar", "Select web Orders menu", "sidebar", 1);
@@ -369,7 +373,7 @@ class DrawerWidState extends State<DrawerWid> {
                 Strings.webOrders,
                 style: Styles.drawerText(),
               ),
-            ),
+            ), */
             /* ListTile(
               
               onTap: () async {
@@ -387,7 +391,7 @@ class DrawerWidState extends State<DrawerWid> {
                 style: Styles.drawerText(),
               ),
             ), */
-            ListTile(
+            /* ListTile(
                 onTap: () async {
                   if (isShiftOpen) {
                     if (permissions.contains(Constant.CLOSING)) {
@@ -438,8 +442,8 @@ class DrawerWidState extends State<DrawerWid> {
                 title: Text(
                     isShiftOpen ? Strings.closeShift : Strings.openShift,
                     style: Styles.drawerText())),
-
-            ListTile(
+ */
+            /* ListTile(
               onTap: () async {
                 await SyncAPICalls.logActivity(
                     "sidebar", "Select shift report menu", "sidebar", 1);
@@ -454,9 +458,9 @@ class DrawerWidState extends State<DrawerWid> {
                 Strings.shiftReport,
                 style: Styles.drawerText(),
               ),
-            ),
+            ), */
 
-            ListTile(
+            /* ListTile(
               onTap: () async {
                 Navigator.of(context).pop();
                 await SyncAPICalls.logActivity(
@@ -472,9 +476,9 @@ class DrawerWidState extends State<DrawerWid> {
                 Strings.syncOrders,
                 style: Styles.drawerText(),
               ),
-            ),
+            ), */
             // : SizedBox(),
-            ListTile(
+           /*  ListTile(
               onTap: () async {
                 await SyncAPICalls.logActivity(
                     "sidebar", "Select sync menu item", "sidebar", 1);
@@ -489,8 +493,8 @@ class DrawerWidState extends State<DrawerWid> {
                 Strings.syncTxt,
                 style: Styles.drawerText(),
               ),
-            ),
-            ListTile(
+            ), */
+            /* ListTile(
               onTap: () async {
                 Navigator.of(context).pop();
                 await SyncAPICalls.logActivity(
@@ -504,7 +508,7 @@ class DrawerWidState extends State<DrawerWid> {
                 size: SizeConfig.safeBlockVertical * 5,
               ),
               title: Text(Strings.settings, style: Styles.drawerText()),
-            ),
+            ), */
           ],
         ),
       ),

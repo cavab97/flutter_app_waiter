@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 import 'package:mcncashier/components/communText.dart';
 import 'package:mcncashier/helpers/sqlDatahelper.dart';
 import 'package:mcncashier/models/Attribute_data.dart';
@@ -51,16 +53,63 @@ import 'package:mcncashier/models/OrderAttributes.dart';
 import 'package:mcncashier/models/TerminalLog.dart';
 import 'package:mcncashier/services/allTablesSync.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:wifi/wifi.dart';
+import 'package:deep_pick/deep_pick.dart';
+import 'package:dio/dio.dart';
 
 class LocalAPI {
+
+  Future<String> getMasterURL() async {
+
+    try {
+      // final address = await Wifi.ip;
+      final address = '192.168.1.2';
+      var parts;
+
+      parts = address.split('.');
+      parts[3] = '239';
+      print(parts);
+      print('http://${parts.join(".")}:4040');
+      return 'http://${parts.join(".")}:4040';
+    } catch (error) {
+      print("getMasterURL err : " +error);
+      rethrow;
+    }
+
+  }
+
   Future<int> terminalLog(TerminalLog log) async {
     try {
-      Database db = DatabaseHelper.dbHelper.getDatabse();
-      var result = await db.insert("terminal_log", log.toJson());
-      return result;
-    } catch (e) {
-      print(e);
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/mine/logs';
+        print('a');
+      var logData = {
+        'module_name': log.module_name,
+        'description': log.description,
+        'table_name': log.table_name,
+        'entity_id': log.entity_id,
+        'user_id': log.uuid,
+        'updated_by': log.updated_by
+      };
+      print('b');
+      print(path);
+      Response response = await Dio().post(
+        path,
+        data: logData,
+        options: Options(contentType: "application/json")
+      );
+
+      print('c');
+      print(response.data.toString());
+
+      return pick(response.data).asIntOrNull();
+
+    } catch (error) {
+      print(error);
+      rethrow;
     }
+    
   }
 
   Future<Terminal> getTerminalDetails(terminalkey) async {
@@ -73,6 +122,27 @@ class LocalAPI {
       terminalDat = list[0];
     }
     return terminalDat;
+
+
+  }
+
+  Future<bool> getShift() async {
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/shifts/current/status';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      return pick(response.data).asBoolOrNull();
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<Category>> getAllCategory() async {
@@ -242,35 +312,53 @@ class LocalAPI {
   }
 
   Future<List<TablesDetails>> getTables(branchid) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String ctime = await CommunFun.getCurrentDateTime(DateTime.now());
-    var query = "SELECT tables.*, table_order.save_order_id,table_order.assing_time as assignTime,table_order.number_of_pax ,table_order.is_merge_table " +
-        " as is_merge_table,(JulianDay('" +
-        ctime +
-        "') - JulianDay(table_order.assing_time) " +
-        " ) * 24 * 60 as occupiedMin, table_order.merged_table_id as merged_table_id, " +
-        " (select tables.table_name from tables where table_order.merged_table_id = tables.table_id) as merge_table_name from tables " +
-        " LEFT JOIN table_order on table_order.table_id = tables.table_id " +
-        " WHERE tables.status = 1 AND branch_id = " +
-        branchid +
-        " GROUP by tables.table_id";
-    var res = await db.rawQuery(query);
-    List<TablesDetails> list = res.isNotEmpty
-        ? res.map((c) => TablesDetails.fromJson(c)).toList()
-        : [];
 
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/tables';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<TablesDetails> list =
+        body.isNotEmpty ? body.map((c) => TablesDetails.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<List<ColorTable>> getTablesColor() async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    var query =
-        "SELECT * FROM table_color where status = 1 ORDER by time_minute ASC ";
-    var res = await db.rawQuery(query);
-    List<ColorTable> list =
-        res.isNotEmpty ? res.map((c) => ColorTable.fromJson(c)).toList() : [];
 
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/tablecolors';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<ColorTable> list =
+        body.isNotEmpty ? body.map((c) => ColorTable.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<int> insertTableOrder(Table_order tableOrder) async {
@@ -762,18 +850,29 @@ class LocalAPI {
   }
 
   Future<int> userCheckInOut(CheckinOut clockinOutData) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    var shiftid;
-    if (clockinOutData.status == "IN") {
-      shiftid = await db.insert("user_checkinout", clockinOutData.toJson());
-    } else {
-      shiftid = await db.update("user_checkinout", clockinOutData.toJson(),
-          where: 'id = ?', whereArgs: [clockinOutData.id]);
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/auth/access/pin';
+
+      var clockinOut = {
+        'id': clockinOutData.id,
+        'user_id': clockinOutData.userId
+      };
+
+      Response response = await Dio().post(
+        path,
+        data: clockinOut,
+        options: Options(contentType: "application/json")
+      );
+
+      return pick(response.data).asIntOrNull();
+
+    } catch (error) {
+      print(error);
+      rethrow;
     }
-    var dis = clockinOutData.status == "IN" ? "User checkin" : "user checkout";
-    /* await SyncAPICalls.logActivity(
-        "PIN number", dis, "user_checkinout", clockinOutData.userId); */
-    return shiftid;
   }
 
   Future<List<SaveOrder>> getSaveOrder(id) async {
@@ -1621,14 +1720,31 @@ class LocalAPI {
   }
 
   Future<List<User>> checkUserExit(userpin) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String qry = "SELECT * from users where user_pin =" +
-        userpin.toString() +
-        " AND status = 1";
-    var user = await db.rawQuery(qry);
-    List<User> list =
-        user.isNotEmpty ? user.map((c) => User.fromJson(c)).toList() : [];
-    return list;
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/auth/me';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'pin': userpin.toString()
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<User> list =
+        body.isNotEmpty ? body.map((c) => User.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   Future<int> deleteOrderItem(detailid) async {
@@ -1672,25 +1788,56 @@ class LocalAPI {
   }
 
   Future<List<Printer>> getAllPrinterForKOT() async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String qry = "SELECT * from printer where status = 1 ";
-    var result = await db.rawQuery(qry);
-    List<Printer> list = result.isNotEmpty
-        ? result.map((c) => Printer.fromJson(c)).toList()
-        : [];
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/kitchenprinters';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Printer> list =
+        body.isNotEmpty ? body.map((c) => Printer.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+
   }
 
   Future<List<Printer>> getAllPrinterForecipt() async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String qry =
-        "SELECT * from printer where printer_is_cashier = 1 AND status = 1";
-    var result = await db.rawQuery(qry);
-    List<Printer> list = result.isNotEmpty
-        ? result.map((c) => Printer.fromJson(c)).toList()
-        : [];
-    return list;
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/receiptprinters';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Printer> list =
+        body.isNotEmpty ? body.map((c) => Printer.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+
   }
+  
 
   Future updateWebCart(MST_Cart cart) async {
     Database db = DatabaseHelper.dbHelper.getDatabse();
@@ -2011,20 +2158,31 @@ class LocalAPI {
   }
 
   Future<List<PosPermission>> getUserPermissions(userid) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    String qry =
-        " SELECT  group_concat(pos_permission.pos_permission_name) as pos_permission_name  from users" +
-            " Left join user_pos_permission on user_pos_permission.user_id = users.id  AND user_pos_permission.status = 1" +
-            " left join pos_permission on pos_permission.pos_permission_id = user_pos_permission.pos_permission_id" +
-            " WHERE user_id  =" +
-            userid.toString();
+ 
+    try {
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/mine/permissions';
 
-    var permissionList = await db.rawQuery(qry);
-    List<PosPermission> list = permissionList.length > 0
-        ? permissionList.map((c) => PosPermission.fromJson(c)).toList()
-        : [];
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'userid': userid
+        },
+        options: Options(contentType: 'application/json')
+      );
 
-    return list;
+      List body = jsonDecode(response.data);
+
+      List<PosPermission> list =
+        body.isNotEmpty ? body.map((c) => PosPermission.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+
   }
 
   Future<List<ProductStoreInventory>> getProductStoreInventoryTable(
@@ -2787,28 +2945,30 @@ class LocalAPI {
     }
   }
 
-  Future<List<Reservation>> getReservationList(int terminalID,
-      [String startFrom, String endOn]) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
+  Future<List<Reservation>> getReservationList() async {
+
     try {
-      String query = "SELECT *  FROM reservation WHERE terminal_id = " +
-          terminalID.toString();
-      if (startFrom != null && startFrom.isNotEmpty) {
-        query += " AND created_at >= '" + startFrom + "'";
-      }
-      if (endOn != null && endOn.isNotEmpty) {
-        query += " AND updated_at <= '" + endOn + "'";
-      }
-      query += " ORDER BY updated_at DESC";
-      var result = await db.rawQuery(query);
-      List<Reservation> list = result.length > 0
-          ? result.map((c) => Reservation.fromJson(c)).toList()
-          : [];
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/reservations';
+
+      Response response = await Dio().get(
+        path,
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<Reservation> list =
+        body.isNotEmpty ? body.map((c) => Reservation.fromJson(c)).toList() : [];
+
       return list;
-    } catch (e) {
-      print(e);
-      return [];
+
+    } catch (error) {
+      print(error);
+      rethrow;
     }
+
   }
 
   Future<List<MSTCartdetails>> getReservationItems(String reservationNo) async {

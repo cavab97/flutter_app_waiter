@@ -2125,7 +2125,7 @@ class _DashboradPageState extends State<DashboradPage>
       crossAxisSpacing: 10,
       padding: EdgeInsets.all(10),
       children: <Widget>[
-        GestureDetector(
+        /* GestureDetector(
             onTap: itemSelected.isFocProduct == 1
                 ? null
                 : () {
@@ -2165,7 +2165,7 @@ class _DashboradPageState extends State<DashboradPage>
                       style: TextStyle(color: Colors.white))
                 ],
               ),
-            )),
+            )), */
         GestureDetector(
           onTap: () {
             if (permissions.contains(Constant.EDIT_ITEM)) {
@@ -2242,7 +2242,7 @@ class _DashboradPageState extends State<DashboradPage>
                 ],
               ),
             )),
-        GestureDetector(
+        /* GestureDetector(
             onTap: () {
               discountItem(itemSelected);
             },
@@ -2266,7 +2266,7 @@ class _DashboradPageState extends State<DashboradPage>
                       style: TextStyle(color: Colors.white))
                 ],
               ),
-            )),
+            )), */
         GestureDetector(
             onTap: () {
               if (permissions.contains(Constant.DELETE_ITEM)) {
@@ -2701,7 +2701,7 @@ class _DashboradPageState extends State<DashboradPage>
           selectedTable != null
               ? Row(
                   children: <Widget>[
-                    menubutton(() {}),
+                    /* menubutton(() {}), */
                     SizedBox(width: 10),
                     Icon(
                       Icons.person,
@@ -2983,7 +2983,7 @@ class _DashboradPageState extends State<DashboradPage>
             ),
           ),
         ),
-        PopupMenuItem(
+        /* PopupMenuItem(
           enabled: cartList.length > 0 ? true : false,
           value: 4,
           child: Padding(
@@ -3009,8 +3009,8 @@ class _DashboradPageState extends State<DashboradPage>
               ],
             ),
           ),
-        ),
-        PopupMenuItem(
+        ), */
+        /* PopupMenuItem(
           enabled: (cartList.length > 0 &&
               (!(selectedvoucher == null && allcartData.discountAmount > 0)) &&
               permissions.contains(Constant.DISCOUNT_ORDER)),
@@ -3048,8 +3048,8 @@ class _DashboradPageState extends State<DashboradPage>
               ],
             ),
           ),
-        ),
-        PopupMenuItem(
+        ), */
+       /*  PopupMenuItem(
           enabled: permissions.contains(Constant.DISCOUNT_ORDER) &&
               cartList.length > 0,
           value: 6,
@@ -3078,7 +3078,7 @@ class _DashboradPageState extends State<DashboradPage>
               ],
             ),
           ),
-        ),
+        ), */
       ],
     );
   }
@@ -3332,9 +3332,10 @@ class _DashboradPageState extends State<DashboradPage>
     // Payment button
     return Row(
         mainAxisAlignment: !isWebOrder
-            ? MainAxisAlignment.spaceAround
+            ? MainAxisAlignment.start
             : MainAxisAlignment.center,
         children: <Widget>[
+          SizedBox(width: 20),
           !isWebOrder
               ? Container(
                   //margin: EdgeInsets.only(top: MediaQuery.of(context).size.height / 1.3),
@@ -3382,12 +3383,12 @@ class _DashboradPageState extends State<DashboradPage>
                     color: Colors.deepOrange,
                     textColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(50.0),
+                      borderRadius: BorderRadius.circular(10.0),
                     ),
                   ),
                 )
               : SizedBox(),
-          Container(
+          /* Container(
             /* margin: EdgeInsets.only(
                 top: MediaQuery.of(context).size.height / 1.3 + 10),*/
             height: SizeConfig.safeBlockVertical * 7,
@@ -3421,7 +3422,8 @@ class _DashboradPageState extends State<DashboradPage>
                 borderRadius: BorderRadius.circular(50.0),
               ),
             ),
-          ),
+          ), */
+          SizedBox(width: 20),
           Container(
             height: SizeConfig.safeBlockVertical * 7,
             width: MediaQuery.of(context).size.width / 7,
@@ -3441,10 +3443,11 @@ class _DashboradPageState extends State<DashboradPage>
                 style: Styles.whiteBoldsmall(),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(50.0),
+                borderRadius: BorderRadius.circular(10.0),
               ),
             ),
           ),
+          SizedBox(width: 20),
           Container(
             height: SizeConfig.safeBlockVertical * 7,
             width: MediaQuery.of(context).size.width / 7,
@@ -3464,10 +3467,11 @@ class _DashboradPageState extends State<DashboradPage>
                 style: Styles.whiteBoldsmall(),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(50.0),
+                borderRadius: BorderRadius.circular(10.0),
               ),
             ),
           ),
+          SizedBox(width: 20),
           Container(
             height: SizeConfig.safeBlockVertical * 7,
             width: MediaQuery.of(context).size.width / 5,
@@ -3491,10 +3495,11 @@ class _DashboradPageState extends State<DashboradPage>
                 style: Styles.whiteBoldsmall(),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(50.0),
+                borderRadius: BorderRadius.circular(10.0),
               ),
             ),
           ),
+          SizedBox(width: 20),
           Container(
             height: SizeConfig.safeBlockVertical * 7,
             width: MediaQuery.of(context).size.width / 7,
@@ -3515,7 +3520,7 @@ class _DashboradPageState extends State<DashboradPage>
                 style: Styles.whiteBoldsmall(),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(50.0),
+                borderRadius: BorderRadius.circular(10.0),
               ),
             ),
           ),

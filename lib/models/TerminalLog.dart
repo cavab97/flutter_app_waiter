@@ -49,21 +49,26 @@ class TerminalLog {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data["id"] = this.id;
-    data["uuid"] = this.uuid;
-    data["terminal_id"] = this.terminal_id;
-    data["is_sync"] = this.isSync;
-    data["branch_id"] = this.branch_id;
-    data["module_name"] = this.module_name;
-    data["description"] = this.description;
-    data["activity_date"] = this.activity_date;
-    data["activity_time"] = this.activity_time;
-    data["table_name"] = this.table_name;
-    data["entity_id"] = this.entity_id;
-    data["status"] = this.status;
-    data["updated_at"] = this.updated_at;
-    data["updated_by"] = this.updated_by;
-    return data;
+    try {
+      final Map<String, dynamic> data = new Map<String, dynamic>();
+      data["id"] = this.id;
+      data["uuid"] = this.uuid;
+      data["terminal_id"] = this.terminal_id;
+      data["is_sync"] = this.isSync;
+      data["branch_id"] = this.branch_id;
+      data["module_name"] = this.module_name;
+      data["description"] = this.description;
+      data["activity_date"] = this.activity_date;
+      data["activity_time"] = this.activity_time;
+      data["table_name"] = this.table_name;
+      data["entity_id"] = this.entity_id;
+      data["status"] = this.status;
+      data["updated_at"] = this.updated_at;
+      data["updated_by"] = this.updated_by;
+      return data;
+    } catch (error) {
+      print('toJson'+error);
+      rethrow;
+    }
   }
 }

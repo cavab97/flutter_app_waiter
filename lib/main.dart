@@ -30,7 +30,7 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    databaseHelper.initializeDatabase();
+    // databaseHelper.initializeDatabase();
     Future.delayed(Duration(seconds: 3), () {
       serverStart();
     });

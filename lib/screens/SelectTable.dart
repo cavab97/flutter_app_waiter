@@ -97,7 +97,7 @@ class _SelectTablePageState extends State<SelectTablePage>
   }
 
   getReservationList() async {
-    var shiftid = await Preferences.getStringValuesSF(Constant.DASH_SHIFT);
+    /* var shiftid = await Preferences.getStringValuesSF(Constant.DASH_SHIFT);
     List<Shift> shift = [];
     if (shiftid != null) {
       shift = await localAPI.getShiftData(shiftid);
@@ -112,14 +112,8 @@ class _SelectTablePageState extends State<SelectTablePage>
       today = DateTime.now();
       dateFrom = DateTime(today.year, today.month, 1).toString();
     }
-    int tID = int.tryParse(await CommunFun.getTeminalKey());
-    List<Reservation> resList = await localAPI.getReservationList(
-      tID,
-      dateFrom,
-      (today != null ? today : DateTime.tryParse(dateFrom))
-          .add(Duration(days: 1))
-          .toString(),
-    );
+    int tID = int.tryParse(await CommunFun.getTeminalKey()); */
+    List<Reservation> resList = await localAPI.getReservationList();
     setState(() {
       reservationList = resList;
     });
@@ -133,6 +127,7 @@ class _SelectTablePageState extends State<SelectTablePage>
   }
 
   afterInit() async {
+    try {
     getTablesColor();
     await getTables();
     checkshift();
@@ -156,6 +151,10 @@ class _SelectTablePageState extends State<SelectTablePage>
     }
 
     getReservationList();
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
   setPermissons() async {
@@ -169,18 +168,18 @@ class _SelectTablePageState extends State<SelectTablePage>
 
   checkshift() async {
     /*Set terminal name for print receipt only */
-    if (Strings.terminalName.isEmpty) {
+   /*  if (Strings.terminalName.isEmpty) {
       var terminalkey = await CommunFun.getTeminalKey();
       Terminal terminalData = await localAPI.getTerminalDetails(terminalkey);
       if (terminalData != null) {
         Strings.terminalName = terminalData.terminalName;
       }
-    }
+    } */
 
-    var isOpen = await Preferences.getStringValuesSF(Constant.IS_SHIFT_OPEN);
+    var isOpen = await localAPI.getShift();
     if (this.mounted) {
       setState(() {
-        isShiftOpen = (isOpen != null && isOpen == "true") ? true : false;
+        isShiftOpen = isOpen ?? false;
       });
     }
   }
@@ -785,6 +784,18 @@ class _SelectTablePageState extends State<SelectTablePage>
             child: Image.asset(Strings.assetHeaderLogo,
                 fit: BoxFit.contain, gaplessPlayback: true),
           ),
+          actions: <Widget>[
+            Padding(
+              padding: EdgeInsets.only(right: 20.0),
+              child: GestureDetector(
+                onTap: () {},
+                child: Icon(
+                  Icons.refresh, //reload data
+                  size: 26.0,
+                ),
+              )
+            ),
+          ],
           bottom: TabBar(
             controller: _tabController,
             indicatorSize: TabBarIndicatorSize.tab,
@@ -1077,10 +1088,10 @@ class _SelectTablePageState extends State<SelectTablePage>
       shrinkWrap: true,
       children: selectedTable == null
           ? [
-              tableButton(FontAwesomeIcons.conciergeBell,
+              /* tableButton(FontAwesomeIcons.conciergeBell,
                   Strings.reservation + Strings.withManagement, context, () {
                 openReservationList();
-              }),
+              }), */
               Container(
                 height: MediaQuery.of(context).size.height * .1,
                 child: Column(
@@ -1217,7 +1228,7 @@ class _SelectTablePageState extends State<SelectTablePage>
         );
       }
     }
-    if (selectedTable.status == 1) {
+    /* if (selectedTable.status == 1) {
       tableOptionWidget.add(
         tableButton(
             FontAwesomeIcons.conciergeBell, Strings.createReservation, context,
@@ -1234,7 +1245,7 @@ class _SelectTablePageState extends State<SelectTablePage>
           }
         }),
       );
-    }
+    } */
     return tableOptionWidget;
   }
 
@@ -1673,7 +1684,7 @@ class _SelectTablePageState extends State<SelectTablePage>
                     ],
                   ),
                 ),
-                Positioned(
+                /* Positioned(
                   top: 10,
                   left: 10,
                   child: Text(
@@ -1682,7 +1693,7 @@ class _SelectTablePageState extends State<SelectTablePage>
                         : Strings.orders + " 0 ",
                     style: Styles.blackMediumBold(),
                   ),
-                ),
+                ), */
                 Positioned(
                   top: 10,
                   right: 10,

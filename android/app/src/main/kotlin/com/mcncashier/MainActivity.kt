@@ -1,4 +1,4 @@
-package com.mcncashier
+package com.mcncashier.waiter
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

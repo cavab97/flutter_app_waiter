@@ -13,7 +13,7 @@ import 'package:mcncashier/screens/WineStorage.dart';
 import 'package:mcncashier/screens/outOfStock/OutofStock.dart';
 
 final Map<String, WidgetBuilder> routes = <String, WidgetBuilder>{
-  Constant.TerminalScreen: (BuildContext context) => TerminalKeyPage(),
+  //Constant.TerminalScreen: (BuildContext context) => TerminalKeyPage(),
   Constant.LoginScreen: (BuildContext context) => LoginPage(),
   Constant.PINScreen: (BuildContext context) => PINPage(),
   Constant.DashboardScreen: (BuildContext context) => DashboradPage(),
