@@ -396,7 +396,7 @@ class _DashboradPageState extends State<DashboradPage>
     cart.grand_total = grandTotal;
     cart.grand_total = double.tryParse(
         await CommunFun.checkRoundData(grandTotal.toStringAsFixed(2)));
-    await localAPI.updateWebCart(cart);
+    //await localAPI.updateWebCart(cart);
     return cart;
   }
 
@@ -1251,7 +1251,7 @@ class _DashboradPageState extends State<DashboradPage>
       selectedProduct,
       cartList,
       allcartData,
-      (MSTCartdetails addedProduct) {
+      () {
         if (selectedTable.save_order_id != null &&
             selectedTable.save_order_id != 0) {
           getCurrentCart();
@@ -2092,6 +2092,7 @@ class _DashboradPageState extends State<DashboradPage>
       localAPI.deleteTableOrder(selectedTable.table_id);
       Preferences.removeSinglePref(Constant.TABLE_DATA);
     } else {
+      print(jsonEncode(originalCartList));
       await localAPI.updateCartListDetails(
           originalCartList, originalCartList[0].cartId);
       await countTotals(currentCartID);

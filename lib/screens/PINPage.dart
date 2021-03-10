@@ -38,10 +38,10 @@ class _PINPageState extends State<PINPage> {
   }
 
   checkAlreadyclockin() async {
-    var isClockin = await localAPI.getShift();
+    var user = await Preferences.getStringValuesSF(Constant.LOIGN_USER);
 
     setState(() {
-      isCheckIn = isClockin ?? false;
+      isCheckIn = user == null ? false : true;
     });
 
     await SyncAPICalls.logActivity(
@@ -89,63 +89,69 @@ class _PINPageState extends State<PINPage> {
   }
 
   clockInwithPIN() async {
-    if (!isCheckIn) {
-      if (pinNumber.length >= 6) {
-        List<User> checkUserExit = await localAPI.checkUserExit(pinNumber);
-        if (checkUserExit.length != 0) {
-          setState(() {
-            isLoading = true;
-          });
-          User user = checkUserExit[0];
-          CheckinOut checkIn = new CheckinOut();
-          var terminalId = await CommunFun.getTeminalKey();
-          var branchid = await CommunFun.getbranchId();
-          var date = DateTime.now();
-          checkIn.localID = await CommunFun.getLocalID();
-          checkIn.terminalId = int.parse(terminalId);
-          checkIn.userId = user.id;
-          //checkIn.branchId = int.parse(branchid);
-          checkIn.status = "IN";
-          checkIn.timeInOut = date.toString();
-          checkIn.createdAt = date.toString();
-          checkIn.sync = 0;
-          var result = await localAPI.userCheckInOut(checkIn);
-          await Preferences.setStringToSF(
-              Constant.LOIGN_USER, json.encode(user));
-          await CommunFun.checkUserPermission(user.id);
-          await Preferences.setStringToSF(Constant.IS_CHECKIN, "true");
-          await Preferences.setStringToSF(Constant.SHIFT_ID, result.toString());
-          await SyncAPICalls.logActivity("Check In",
-              user.name.toString() + " checked In", "user_checkinout", 1);
-          await Navigator.pushNamedAndRemoveUntil(context,
-              Constant.SelectTableScreen, (Route<dynamic> route) => false,
-              arguments: {"isAssign": false});
-          if (this.mounted) {
+    try {
+      if (!isCheckIn) {
+        if (pinNumber.length >= 6) {
+          List<User> checkUserExit = await localAPI.checkUserExit(pinNumber);
+          if (checkUserExit.length != 0) {
             setState(() {
-              isLoading = false;
+              isLoading = true;
             });
+            User user = checkUserExit[0];
+            CheckinOut checkIn = new CheckinOut();
+            var terminalId = await CommunFun.getTeminalKey();
+            var branchid = await CommunFun.getbranchId();
+            var date = DateTime.now();
+            checkIn.localID = await CommunFun.getLocalID();
+            checkIn.terminalId = int.parse(terminalId);
+            checkIn.userId = user.id;
+            //checkIn.branchId = int.parse(branchid);
+            checkIn.status = "IN";
+            checkIn.timeInOut = date.toString();
+            checkIn.createdAt = date.toString();
+            checkIn.sync = 0;
+            var result = await localAPI.userCheckInOut(checkIn);
+            await Preferences.setStringToSF(
+                Constant.LOIGN_USER, json.encode(user));
+            await CommunFun.checkUserPermission(user.id);
+            await Preferences.setStringToSF(Constant.IS_CHECKIN, "true");
+            await Preferences.setStringToSF(Constant.SHIFT_ID, result.toString());
+            await SyncAPICalls.logActivity("Check In",
+                user.name.toString() + " checked In", "user_checkinout", 1);
+            await Navigator.pushNamedAndRemoveUntil(context,
+                Constant.SelectTableScreen, (Route<dynamic> route) => false,
+                arguments: {"isAssign": false});
+            if (this.mounted) {
+              setState(() {
+                isLoading = false;
+              });
+            }
+          } else {
+            if (this.mounted) {
+              setState(() {
+                isLoading = false;
+              });
+            }
+            CommunFun.showToast(context, Strings.invalidPinMsg);
           }
         } else {
-          if (this.mounted) {
-            setState(() {
-              isLoading = false;
-            });
+          if (pinNumber.length >= 6) {
+            CommunFun.showToast(context, Strings.invalidPinMsg);
+          } else {
+            CommunFun.showToast(context, Strings.pinValidationMessage);
           }
-          CommunFun.showToast(context, Strings.invalidPinMsg);
         }
       } else {
-        if (pinNumber.length >= 6) {
-          CommunFun.showToast(context, Strings.invalidPinMsg);
-        } else {
-          CommunFun.showToast(context, Strings.pinValidationMessage);
-        }
+        CommunFun.showToast(context, Strings.alreadyClockinMsg);
       }
-    } else {
-      CommunFun.showToast(context, Strings.alreadyClockinMsg);
+    } catch (error) {
+      print(error);
+      CommunFun.showToast(context, 'Connect server failed. Please restart your application.');
     }
   }
 
   clockOutwithPIN() async {
+    try {
     var loginUser = await Preferences.getStringValuesSF(Constant.LOIGN_USER);
     if (loginUser == null) {
       CommunFun.showToast(context, Strings.noUserClockIn);
@@ -184,6 +190,10 @@ class _PINPageState extends State<PINPage> {
       }
     } else {
       CommunFun.showToast(context, Strings.alreadyClockoutMsg);
+    }
+    } catch (error) {
+      print(error);
+      CommunFun.showToast(context, 'Connect server error. Please restart your application.');
     }
   }
 
@@ -356,38 +366,21 @@ class _PINPageState extends State<PINPage> {
                                 size: SizeConfig.safeBlockVertical * 7,
                               )),
                         )
-                      : Align(
-                          alignment: Alignment.topRight,
-                          child: IconButton(
-                              padding: EdgeInsets.only(
-                                  right: SizeConfig.safeBlockVertical * 5),
-                              onPressed: () async {
-                                // await Navigator.pushNamedAndRemoveUntil(
-                                //   context,
-                                //   Constant.TerminalScreen,
-                                //   (Route<dynamic> route) => false,
-                                // );
-                              },
-                              icon: Icon(
-                                Icons.close,
-                                color: StaticColor.colorBlack,
-                                size: SizeConfig.safeBlockVertical * 7,
-                              )),
-                        ),
-                  isCheckIn
-                      ? Positioned(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              vertical: SizeConfig.safeBlockVertical * 3 * .5,
-                              horizontal: SizeConfig.safeBlockVertical * 3,
-                            ),
-                            child: IconButton(
-                              icon: Icon(Icons.sync),
-                              onPressed: syncAllTables,
-                            ),
-                          ),
-                        )
                       : Container(),
+                  // isCheckIn
+                  //     ? Positioned(
+                  //         child: Padding(
+                  //           padding: EdgeInsets.symmetric(
+                  //             vertical: SizeConfig.safeBlockVertical * 3 * .5,
+                  //             horizontal: SizeConfig.safeBlockVertical * 3,
+                  //           ),
+                  //           child: IconButton(
+                  //             icon: Icon(Icons.sync),
+                  //             onPressed: syncAllTables,
+                  //           ),
+                  //         ),
+                  //       )
+                  //     : Container(),
                 ],
               ),
             ),

@@ -25,6 +25,7 @@ import 'package:mcncashier/theme/Sized_Config.dart';
 import 'package:mcncashier/components/colors.dart';
 import 'package:mcncashier/services/allTablesSync.dart';
 import 'package:mcncashier/widget/CloseButtonWidget.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class ProductQuantityDailog extends StatefulWidget {
   // quantity Dailog
@@ -84,6 +85,7 @@ class _ProductQuantityDailogState extends State<ProductQuantityDailog> {
   bool isFirstMod = false;
   bool isFirstAttr = false;
   bool isFirstAttrSet = true;
+  bool isLoading = false;
   List<dynamic> attrdata;
 
   @override
@@ -396,10 +398,18 @@ class _ProductQuantityDailogState extends State<ProductQuantityDailog> {
     List<ModifireData> productModifeir =
         await localAPI.getProductModifeir(productid);
     if (productModifeir.length > 0 && this.mounted) {
+      for (ModifireData modifier in productModifeir) {
+        if (modifier.isDefault == 1 && selectedModifier.length == 0) {
+          selectedModifier.add(modifier);
+        }
+      }
+    }
       setState(() {
         modifireList = productModifeir;
+        selectedModifier = selectedModifier;
+        isFirstMod = true;
+        setPrice();
       });
-    }
     /* for (var item in productAttr) {
       if (item.is_default == "1") {
         print('enter is default');
@@ -957,160 +967,207 @@ class _ProductQuantityDailogState extends State<ProductQuantityDailog> {
   }
 
   produtAddTocart() async {
-    if (widget.cartID == null) {
-      return addToReservation();
-    }
-    MST_Cart cart = new MST_Cart();
-
-    //MSTSubCartdetails subCartData = new MSTSubCartdetails();
-    SaveOrder orderData = new SaveOrder();
-
-    var branchid = await CommunFun.getbranchId();
-    var loginUser = await Preferences.getStringValuesSF(Constant.LOIGN_USER);
-    var loginData = await json.decode(loginUser);
-    var customerData =
-        await Preferences.getStringValuesSF(Constant.CUSTOMER_DATA);
-    var customer =
-        customerData != null ? json.decode(customerData) : customerData;
-    var customerid = customer != null ? customer["customer_id"] : 0;
-    Table_order tableData = await CommunFun.getTableData(); // table data
-    var qty = await countTotalQty();
-    var disc = await countDiscount();
-    var subtotal = await countSubtotal();
-    var serviceCharge =
-        await CommunFun.countServiceCharge(tableData.service_charge, subtotal);
-    var serviceChargePer = tableData.service_charge == null
-        ? await CommunFun.getServiceChargePer()
-        : tableData.service_charge;
-
-    var totalTax = await countTax(subtotal);
-    var grandTotal =
-        await countGrandtotal(subtotal, serviceCharge, taxvalues, disc);
-
-    //cart data
-
-    if (currentCart != null) {
-      cart.id = currentCart.id;
-      cart.discountType = currentCart.discountType;
-      cart.voucher_detail = currentCart.voucher_detail;
-      cart.voucher_id = cart.voucher_id;
-    }
-    cart.user_id = customerid;
-    cart.branch_id = int.parse(branchid);
-    cart.sub_total = double.parse(subtotal.toStringAsFixed(2));
-    cart.serviceCharge = CommunFun.getDoubleValue(serviceCharge);
-    cart.serviceChargePercent = CommunFun.getDoubleValue(serviceChargePer);
-    cart.discountAmount = disc;
-    cart.table_id = tableData.table_id;
-    cart.total_qty = qty;
-    cart.tax = double.parse(taxvalues.toStringAsFixed(2));
-    cart.source = 2;
-    cart.tax_json = json.encode(totalTax);
-    cart.grand_total = double.parse(grandTotal.toStringAsFixed(2));
-    cart.customer_terminal = customer != null ? customer["terminal_id"] : 0;
-    cart.created_by = loginData["id"];
-    cart.localID = await CommunFun.getLocalID();
-    cart.created_at = await CommunFun.getCurrentDateTime(DateTime.now());
-    orderData.orderName = tableData != null ? "" : "test";
-    orderData.numberofPax = tableData != null ? tableData.number_of_pax : 0;
-    orderData.isTableOrder = tableData != null ? 1 : 0;
-    if (!isEditing) {
-      orderData.createdAt = await CommunFun.getCurrentDateTime(DateTime.now());
-    }
-
-    var cartid = await localAPI.insertItemTocart(
-        currentCart.id, cart, productItem, orderData, tableData.table_id);
-    ProductDetails cartItemproduct = new ProductDetails();
-    if (!isSetMeal) {
-      cartItemproduct.qty = productQty;
-      cartItemproduct.status = productItem.status;
-      cartItemproduct.productId = productItem.productId;
-      cartItemproduct.name = productItem.name;
-      cartItemproduct.uuid = productItem.uuid;
-      cartItemproduct.price = productItem.price;
-    } else {
-      cartItemproduct.qty = productQty;
-      cartItemproduct.status = setmeal.status;
-      cartItemproduct.productId = setmeal.setmealId;
-      cartItemproduct.name = setmeal.name;
-      cartItemproduct.uuid = setmeal.uuid;
-      cartItemproduct.price = setmeal.price;
-    }
-    cartItemproduct
-        .toJson()
-        .removeWhere((String key, dynamic value) => value == null);
-    var data = cartItemproduct;
-    MSTCartdetails cartdetails = new MSTCartdetails();
-    if (isEditing) {
-      cartdetails.id = cartitem.id;
-    }
-    cartdetails.cartId = cartid;
-    cartdetails.productId =
-        isSetMeal ? setmeal.setmealId : productItem.productId;
-    cartdetails.productName = isSetMeal ? setmeal.name : productItem.name;
-    cartdetails.productSecondName = isSetMeal ? "" : productItem.name_2;
-    cartdetails.productPrice = isSetMeal ? setmeal.price : productItem.price;
-    cartdetails.productDetailAmount = double.parse(price.toStringAsFixed(2));
-    cartdetails.productQty = productQty.toDouble();
-    cartdetails.productNetPrice =
-        productItem.oldPrice != null ? productItem.oldPrice : 0.0;
-    cartdetails.createdBy = loginData["id"];
-    cartdetails.cart_detail = jsonEncode(data);
-    cartdetails.discountAmount = 0;
-    cartdetails.localID = await CommunFun.getLocalID();
-    cartdetails.remark =
-        extraNotes.text.trim().isNotEmpty ? extraNotes.text.trim() : "";
-    cartdetails.issetMeal = isSetMeal ? 1 : 0;
-    cartdetails.taxValue = taxvalues;
-    cartdetails.printer_id = printer != null ? printer.printerId : 0;
-    cartdetails.createdAt = await CommunFun.getCurrentDateTime(DateTime.now());
-    if (isSetMeal) {
-      cartdetails.setmeal_product_detail = json.encode(mealProducts);
-    }
-    var detailID = await localAPI.addintoCartDetails(cartdetails);
-    await localAPI.deletesubcartDetail(detailID);
-    if (selectedModifier.length > 0) {
-      for (var i = 0; i < selectedModifier.length; i++) {
-        MSTSubCartdetails subCartData = new MSTSubCartdetails();
-        var modifire = selectedModifier[i];
-
-        subCartData.cartdetailsId = detailID;
-        subCartData.localID = cart.localID;
-        subCartData.productId = productItem.productId;
-        subCartData.modifierId = modifire.modifierId;
-        subCartData.caId = cart.id;
-        subCartData.modifirePrice = modifire.price;
-        int addedID = await localAPI.addsubCartData(subCartData);
-        print(addedID);
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      if (widget.cartID == null && widget.addReservation != null) {
+        return addToReservation();
       }
+      MST_Cart cart = new MST_Cart(); 
+  
+      var loginUser = await Preferences.getStringValuesSF(Constant.LOIGN_USER);
+      var loginData = await json.decode(loginUser);   
+
+      Table_order tableData = await CommunFun.getTableData(); // table data  
+
+      if (currentCart != null) {
+        cart.id = currentCart.id; 
+      } 
+
+      var cartid = await localAPI.insertItemTocart(
+          loginData['id'], 
+          currentCart.id, 
+          tableData.table_id, 
+          productItem.productId, 
+          productQty == null?0:productQty.toInt(), 
+          selectedModifier.map((e) => e.modifierId).toList(),
+          selectedAttr.map<int>((e) => e["attrType_ID"] is int
+            ? e["attrType_ID"]
+            : int.parse(e["attrType_ID"])).toList(),
+          isSetMeal,
+          extraNotes.text
+        );
+
+      await SyncAPICalls.logActivity(
+          "product details", "Added items to cart", "cart", 1);
+      Navigator.of(context).pop();
+      widget.onClose();
+    } catch (error) {
+      setState(() {
+        isLoading = false;
+      });
+      CommunFun.showToast(context, 'There is something went wrong.');
+      print(error.toString());
     }
-    for (var i = 0; i < selectedAttr.length; i++) {
-      var attr = selectedAttr[i];
-      MSTSubCartdetails subCartData = new MSTSubCartdetails();
-      subCartData.cartdetailsId = detailID;
-      subCartData.localID = cart.localID;
-      subCartData.productId = productItem.productId;
-      subCartData.caId = attr["ca_id"];
-      subCartData.attributeId = attr["attrType_ID"] is int
-          ? attr["attrType_ID"]
-          : int.parse(attr["attrType_ID"]);
-      subCartData.attrPrice = double.parse(attr["attr_price"]).toDouble();
-      await localAPI.addsubCartData(subCartData);
-    }
-    if (isEditing) {
-      if (!isSetMeal) {
-        if (cartitem.isSendKichen == 1) {
-          var items = [];
-          items.add(cartitem);
-          //senditemtoKitchen(items);
-        }
-      }
-    }
-    await SyncAPICalls.logActivity(
-        "product details", "Added items to cart", "cart", 1);
-    Navigator.of(context).pop();
-    widget.onClose();
   }
+
+
+  // produtAddTocart() async {
+  //   if (widget.cartID == null && widget.addReservation != null) {
+  //     return addToReservation();
+  //   }
+  //   MST_Cart cart = new MST_Cart();
+
+  //   //MSTSubCartdetails subCartData = new MSTSubCartdetails();
+  //   SaveOrder orderData = new SaveOrder();
+
+  //   var branchid = await CommunFun.getbranchId();
+  //   var loginUser = await Preferences.getStringValuesSF(Constant.LOIGN_USER);
+  //   var loginData = await json.decode(loginUser);
+  //   var customerData =
+  //       await Preferences.getStringValuesSF(Constant.CUSTOMER_DATA);
+  //   var customer =
+  //       customerData != null ? json.decode(customerData) : customerData;
+  //   var customerid = customer != null ? customer["customer_id"] : 0;
+  //   Table_order tableData = await CommunFun.getTableData(); // table data
+  //   var qty = await countTotalQty();
+  //   var disc = await countDiscount();
+  //   var subtotal = await countSubtotal();
+  //   var serviceCharge = 
+  //       await CommunFun.countServiceCharge(tableData.service_charge, subtotal);
+  //   var serviceChargePer = tableData.service_charge == null
+  //       ? await CommunFun.getServiceChargePer()
+  //       : tableData.service_charge;
+
+  //   var totalTax = await countTax(subtotal);
+  //   var grandTotal =
+  //       await countGrandtotal(subtotal, serviceCharge, taxvalues, disc);
+
+  //   //cart data
+
+  //   if (currentCart != null) {
+  //     cart.id = currentCart.id;
+  //     cart.discountType = currentCart.discountType;
+  //     cart.voucher_detail = currentCart.voucher_detail;
+  //     cart.voucher_id = cart.voucher_id;
+  //   }
+  //   cart.user_id = customerid;
+  //   cart.branch_id = int.parse(branchid);
+  //   cart.sub_total = double.parse(subtotal.toStringAsFixed(2));
+  //   cart.serviceCharge = CommunFun.getDoubleValue(serviceCharge);
+  //   cart.serviceChargePercent = CommunFun.getDoubleValue(serviceChargePer);
+  //   cart.discountAmount = disc;
+  //   cart.table_id = tableData.table_id;
+  //   cart.total_qty = qty;
+  //   cart.tax = double.parse(taxvalues.toStringAsFixed(2));
+  //   cart.source = 2;
+  //   cart.tax_json = json.encode(totalTax);
+  //   cart.grand_total = double.parse(grandTotal.toStringAsFixed(2));
+  //   cart.customer_terminal = customer != null ? customer["terminal_id"] : 0;
+  //   cart.created_by = loginData["id"];
+  //   cart.localID = await CommunFun.getLocalID();
+  //   cart.created_at = await CommunFun.getCurrentDateTime(DateTime.now());
+  //   orderData.orderName = tableData != null ? "" : "test";
+  //   orderData.numberofPax = tableData != null ? tableData.number_of_pax : 0;
+  //   orderData.isTableOrder = tableData != null ? 1 : 0;
+  //   if (!isEditing) {
+  //     orderData.createdAt = await CommunFun.getCurrentDateTime(DateTime.now());
+  //   }
+
+  //   var cartid = await localAPI.insertItemTocart(
+  //     loginUser, currentCart.id, cart, productItem, orderData, tableData.table_id);
+  //   ProductDetails cartItemproduct = new ProductDetails();
+  //   if (!isSetMeal) {
+  //     cartItemproduct.qty = productQty;
+  //     cartItemproduct.status = productItem.status;
+  //     cartItemproduct.productId = productItem.productId;
+  //     cartItemproduct.name = productItem.name;
+  //     cartItemproduct.uuid = productItem.uuid;
+  //     cartItemproduct.price = productItem.price;
+  //   } else {
+  //     cartItemproduct.qty = productQty;
+  //     cartItemproduct.status = setmeal.status;
+  //     cartItemproduct.productId = setmeal.setmealId;
+  //     cartItemproduct.name = setmeal.name;
+  //     cartItemproduct.uuid = setmeal.uuid;
+  //     cartItemproduct.price = setmeal.price;
+  //   }
+  //   cartItemproduct
+  //       .toJson()
+  //       .removeWhere((String key, dynamic value) => value == null);
+  //   var data = cartItemproduct;
+  //   MSTCartdetails cartdetails = new MSTCartdetails();
+  //   if (isEditing) {
+  //     cartdetails.id = cartitem.id;
+  //   }
+  //   cartdetails.cartId = cartid;
+  //   cartdetails.productId =
+  //       isSetMeal ? setmeal.setmealId : productItem.productId;
+  //   cartdetails.productName = isSetMeal ? setmeal.name : productItem.name;
+  //   cartdetails.productSecondName = isSetMeal ? "" : productItem.name_2;
+  //   cartdetails.productPrice = isSetMeal ? setmeal.price : productItem.price;
+  //   cartdetails.productDetailAmount = double.parse(price.toStringAsFixed(2));
+  //   cartdetails.productQty = productQty.toDouble();
+  //   cartdetails.productNetPrice =
+  //       productItem.oldPrice != null ? productItem.oldPrice : 0.0;
+  //   cartdetails.createdBy = loginData["id"];
+  //   cartdetails.cart_detail = jsonEncode(data);
+  //   cartdetails.discountAmount = 0;
+  //   cartdetails.localID = await CommunFun.getLocalID();
+  //   cartdetails.remark =
+  //       extraNotes.text.trim().isNotEmpty ? extraNotes.text.trim() : "";
+  //   cartdetails.issetMeal = isSetMeal ? 1 : 0;
+  //   cartdetails.taxValue = taxvalues;
+  //   cartdetails.printer_id = printer != null ? printer.printerId : 0;
+  //   cartdetails.createdAt = await CommunFun.getCurrentDateTime(DateTime.now());
+  //   if (isSetMeal) {
+  //     cartdetails.setmeal_product_detail = json.encode(mealProducts);
+  //   }
+  //   var detailID = await localAPI.addintoCartDetails(cartdetails);
+  //   await localAPI.deletesubcartDetail(detailID);
+  //   if (selectedModifier.length > 0) {
+  //     for (var i = 0; i < selectedModifier.length; i++) {
+  //       MSTSubCartdetails subCartData = new MSTSubCartdetails();
+  //       var modifire = selectedModifier[i];
+
+  //       subCartData.cartdetailsId = detailID;
+  //       subCartData.localID = cart.localID;
+  //       subCartData.productId = productItem.productId;
+  //       subCartData.modifierId = modifire.modifierId;
+  //       subCartData.caId = cart.id;
+  //       subCartData.modifirePrice = modifire.price;
+  //       int addedID = await localAPI.addsubCartData(subCartData);
+  //       print(addedID);
+  //     }
+  //   }
+  //   for (var i = 0; i < selectedAttr.length; i++) {
+  //     var attr = selectedAttr[i];
+  //     MSTSubCartdetails subCartData = new MSTSubCartdetails();
+  //     subCartData.cartdetailsId = detailID;
+  //     subCartData.localID = cart.localID;
+  //     subCartData.productId = productItem.productId;
+  //     subCartData.caId = attr["ca_id"];
+  //     subCartData.attributeId = attr["attrType_ID"] is int
+  //         ? attr["attrType_ID"]
+  //         : int.parse(attr["attrType_ID"]);
+  //     subCartData.attrPrice = double.parse(attr["attr_price"]).toDouble();
+  //     await localAPI.addsubCartData(subCartData);
+  //   }
+  //   if (isEditing) {
+  //     if (!isSetMeal) {
+  //       if (cartitem.isSendKichen == 1) {
+  //         var items = [];
+  //         items.add(cartitem);
+  //         //senditemtoKitchen(items);
+  //       }
+  //     }
+  //   }
+  //   await SyncAPICalls.logActivity(
+  //       "product details", "Added items to cart", "cart", 1);
+  //   Navigator.of(context).pop();
+  //   widget.onClose();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -1136,6 +1193,7 @@ class _ProductQuantityDailogState extends State<ProductQuantityDailog> {
             Spacer(),
 
             CloseButtonWidget(inputContext: context),
+            
             /* GestureDetector(
                   onTap: () {
                     Navigator.of(context).pop();
@@ -1194,6 +1252,10 @@ class _ProductQuantityDailogState extends State<ProductQuantityDailog> {
                     ),
                     Spacer(),
                     buttonContainer(),
+                    Spacer(),
+                    isLoading 
+                      ? SpinKitCircle(color: Colors.black, size: 30.0)
+                      : Container(),
                     Spacer(),
                     addbutton(context),
                   ],
@@ -1793,13 +1855,13 @@ class _ProductQuantityDailogState extends State<ProductQuantityDailog> {
         children: modifireList.map(
           (modifier) {
             //bool isadded = selectedModifier.any((item) => item.pmId == modifier.pmId);
-            if (modifier.isDefault == 1 && selectedModifier.length == 0) {
-              setState(() {
-                setPrice();
-                selectedModifier.add(modifier);
-                isFirstMod = true;
-              });
-            }
+            // if (modifier.isDefault == 1 && selectedModifier.length == 0) {
+            //   setState(() {
+            //     setPrice();
+            //     selectedModifier.add(modifier);
+            //     isFirstMod = true;
+            //   });
+            // }
             return Padding(
               padding: EdgeInsets.all(5),
               child: MaterialButton(

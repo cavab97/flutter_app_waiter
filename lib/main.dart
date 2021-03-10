@@ -72,8 +72,8 @@ class MyAppState extends State<MyApp> with WidgetsBindingObserver {
       home: SplashScreen(),
       title: 'cashierApp',
       theme: appTheme(),
-      initialRoute:
-        widget.islogin ? Constant.SelectTableScreen : Constant.PINScreen,
+      /* initialRoute:
+        widget.islogin ? Constant.SelectTableScreen : Constant.PINScreen, */
       routes: routes,
     );
   }

@@ -33,9 +33,9 @@ class Strings {
   static String btnAddCustomer = "Add Customer";
   static String selectCustomer = "Select Customer";
   static String pinNumber = "PIN Number";
-  static String pinValidationMessage = "Please enter your PIN number";
-  static String alreadyClockinMsg = "User Already checkedIN.";
-  static String alreadyClockoutMsg = "User Already checkedOUT.";
+  static String pinValidationMessage = "Please enter the correct PIN number";
+  static String alreadyClockinMsg = "User is currently checked in.";
+  static String alreadyClockoutMsg = "User has already checked out.";
   static String noUserClockIn = "No User Check In";
   static String titlePay = "PAY";
   static String checkout = "Clock Out";
@@ -109,7 +109,7 @@ class Strings {
   static String assetsBG = "assets/bg.jpg";
   static String noImageAsset = 'assets/no_image.png';
   static String enter = "E\nn\nt\ne\nr";
-  static String invalidPinMsg = "Authorization Access";
+  static String invalidPinMsg = "Unauthorized access. Please try again.";
   static String clear = "Clear";
   static String storeValidationMessage =
       "selected qty is not available in store";

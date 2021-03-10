@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +36,7 @@ import 'package:mcncashier/services/allTablesSync.dart';
 import 'package:mcncashier/models/MST_Cart.dart';
 import '../components/communText.dart';
 import 'package:keyboard_visibility/keyboard_visibility.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class SelectTablePage extends StatefulWidget {
   // PIN Enter PAGE
@@ -58,6 +60,7 @@ class _SelectTablePageState extends State<SelectTablePage>
   TablesDetails mergeInTable;
   TablesDetails changeInTable;
   bool isLoading = false;
+  bool isRefreshing = false;
   bool isMergeing = false;
   bool isChangingTable = false;
   bool isAssigning = false;
@@ -71,6 +74,8 @@ class _SelectTablePageState extends State<SelectTablePage>
   MaterialColor tableSelectedColor = Colors.orange;
   List<ColorTable> tableColors = new List<ColorTable>();
   List<Reservation> reservationList = [];
+  String refreshError;
+  String overallError;
 
   @override
   void initState() {
@@ -82,8 +87,10 @@ class _SelectTablePageState extends State<SelectTablePage>
       },
     );
     _tabController = new TabController(length: 2, vsync: this);
-    checkisInit();
-    checkISlogin();
+    Future.delayed(Duration(),(){
+      checkisInit();
+      checkISlogin();
+    });
   }
 
   checkisInit() async {
@@ -94,6 +101,9 @@ class _SelectTablePageState extends State<SelectTablePage>
     //   await databaseHelper.initializeDatabase();
     //   afterInit();
     // }
+    Timer.periodic(new Duration(seconds: 10), (timer) {
+      getTables();
+    });
   }
 
   getReservationList() async {
@@ -128,32 +138,37 @@ class _SelectTablePageState extends State<SelectTablePage>
 
   afterInit() async {
     try {
-    getTablesColor();
-    await getTables();
-    checkshift();
-    await getAllPrinter();
-    setPermissons();
-    Map arguments = new Map();
-    if (this.mounted) {
-      arguments = ModalRoute.of(context).settings.arguments as Map;
-    }
-    if (arguments != null) {
-      int updatedTableId = arguments['updatedTableId'];
-      Function callbackFunction = arguments['callbackFunction'];
-      if (updatedTableId != null && updatedTableId > 0) {
-        List<MSTCartdetails> cartLists = arguments['cartLists'];
-        if (cartLists != null && cartLists.length > 0) {
-          sendTokitched(cartLists, updatedTableId);
-        }
-      } else if (callbackFunction != null) {
-        callbackFunction(context);
+      setState(() {
+        overallError = null;
+      });
+      getTablesColor();
+      await getTables();
+      checkshift();
+      await getAllPrinter();
+      setPermissons();
+      Map arguments = new Map();
+      if (this.mounted) {
+        arguments = ModalRoute.of(context).settings.arguments as Map;
       }
-    }
+      if (arguments != null) {
+        int updatedTableId = arguments['updatedTableId'];
+        Function callbackFunction = arguments['callbackFunction'];
+        if (updatedTableId != null && updatedTableId > 0) {
+          List<MSTCartdetails> cartLists = arguments['cartLists'];
+          if (cartLists != null && cartLists.length > 0) {
+            sendTokitched(cartLists, updatedTableId);
+          }
+        } else if (callbackFunction != null) {
+          callbackFunction(context);
+        }
+      }
 
-    getReservationList();
+      getReservationList();
     } catch (error) {
       print(error);
-      rethrow;
+      setState(() {
+        overallError = "Connect server failed. Please reopen your application.";
+      });
     }
   }
 
@@ -184,38 +199,59 @@ class _SelectTablePageState extends State<SelectTablePage>
     }
   }
 
-  getTables() async {
-    if (this.mounted) {
-      setState(() {
-        isLoading = true;
-      });
-    }
+  Future<List<TablesDetails>> refreshTables() async {
 
-    var currentCart = [];
-    MST_Cart cart;
+    try {
+      var branchid = await CommunFun.getbranchId();
+      List<TablesDetails> tables = await localAPI.getTables(branchid);
+      MST_Cart cart;
+      var currentCart = [];
 
-    var branchid = await CommunFun.getbranchId();
-    List<TablesDetails> tables = await localAPI.getTables(branchid);
+      for (int i = 0; i < tables.length; i++) {
+        currentCart = await localAPI.getSaveOrder(tables[i].saveorderid);
 
-    for (int i = 0; i < tables.length; i++) {
-      currentCart = await localAPI.getSaveOrder(tables[i].saveorderid);
+        if (currentCart.isNotEmpty) {
+          cart = await localAPI.getCartData(currentCart[0].cartId);
 
-      if (currentCart.isNotEmpty) {
-        cart = await localAPI.getCartData(currentCart[0].cartId);
-
-        if (cart != null) {
-          tables[i].currentAmount = cart.grand_total;
+          if (cart != null) {
+            tables[i].currentAmount = cart.grand_total;
+          }
         }
+
+        currentCart = [];
       }
 
-      currentCart = [];
-    }
+      return tables;
 
-    if (this.mounted) {
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+  }
+
+  getTables() async {
+    try {
+      if (this.mounted) {
+        setState(() {
+          refreshError = null;
+          isRefreshing = true;
+        });
+      }
+
+      List<TablesDetails> tables = await refreshTables();
+
+      if (this.mounted) {
+        setState(() {
+          tableList = tables;
+          isRefreshing = false;
+        });
+      }
+    } catch (error) {
       setState(() {
-        tableList = tables;
-        isLoading = false;
+        refreshError = "Updating Failed. Retrying ...";
+        isRefreshing = false;
       });
+      print(error);
     }
   }
 
@@ -785,15 +821,25 @@ class _SelectTablePageState extends State<SelectTablePage>
                 fit: BoxFit.contain, gaplessPlayback: true),
           ),
           actions: <Widget>[
+            overallError != null || refreshError != null ?
+            Padding(
+              padding: EdgeInsets.only(right: 20.0, top: 10.0),
+              child: Text(overallError??refreshError, style: TextStyle(fontSize: 28.0, color: Colors.red)),
+            )
+            :
+            Container(),
+
             Padding(
               padding: EdgeInsets.only(right: 20.0),
-              child: GestureDetector(
-                onTap: () {},
-                child: Icon(
-                  Icons.refresh, //reload data
-                  size: 26.0,
-                ),
-              )
+              child: isRefreshing ?
+               SpinKitCircle(color: Colors.white, size: 30.0):
+                InkWell(
+                  onTap: getTables,
+                  child: Icon(
+                    Icons.refresh, //reload data
+                    size: 30.0,
+                  ),
+                )
             ),
           ],
           bottom: TabBar(
@@ -1533,6 +1579,10 @@ class _SelectTablePageState extends State<SelectTablePage>
       // DineIn
       var takeAway = tableList.where((x) => x.tableType == 2).toList();
       newtableList = takeAway;
+    }
+
+    if (isRefreshing && tableList.isEmpty) {
+      return SpinKitCircle(color: Colors.white, size: 30.0);
     }
 
     return GridView.count(

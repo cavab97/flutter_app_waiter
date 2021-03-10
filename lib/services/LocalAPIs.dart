@@ -633,40 +633,80 @@ class LocalAPI {
   }
 
   Future<List<ModifireData>> getProductModifeir(productId) async {
-    String qry =
-        "SELECT modifier.name,modifier.modifier_id,modifier.is_default,product_modifier.pm_id,product_modifier.price FROM  product_modifier " +
-            " LEFT JOIN modifier on modifier.modifier_id = product_modifier.modifier_id " +
-            " WHERE product_modifier.product_id = " +
-            productId.toString() +
-            " AND product_modifier.status = 1" +
-            " GROUP by product_modifier.pm_id";
-    List<Map> res = await DatabaseHelper.dbHelper.getDatabse().rawQuery(qry);
-    List<ModifireData> list =
-        res.isNotEmpty ? res.map((c) => ModifireData.fromJson(c)).toList() : [];
 
-    return list;
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/productmodifiers';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'productid': productId
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<ModifireData> list =
+        body.isNotEmpty ? body.map((c) => ModifireData.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
   }
 
-  Future<int> insertItemTocart(cartidd, MST_Cart cartData,
-      ProductDetails product, SaveOrder orderData, tableiD) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    var cartid;
-    if (cartidd == null) {
-      cartid = await db.insert("mst_cart", cartData.toJson());
-      /* await SyncAPICalls.logActivity(
-          "cart", "Product add in to cart", "mst_cart", cartid); */
-      orderData.cartId = cartid; //cartid
-      await insertSaveOrders(orderData, tableiD);
-    } else {
-      cartData.id = cartidd;
-      var res_cartid = await db.update("mst_cart", cartData.toJson(),
-          where: 'id = ?', whereArgs: [cartidd]);
-      cartid = cartidd;
-      /* await SyncAPICalls.logActivity(
-          "cart", "Product update in to cart", "mst_cart", res_cartid); */
+  Future<int> insertItemTocart(
+    int userId, 
+    int cartId, 
+    int tableId, 
+    int productId, 
+    int productQty, 
+    List<int> modifierIds, 
+    List<int> attrIds,
+    bool isSetMeal,
+    String noteMessage
+  ) async {
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/cartproducts';
+
+      var submitData = {
+        'cart_id': cartId,
+        'table_id': tableId,
+        'product_id': productId,
+        'user_id': userId,
+        'product_qty': productQty,
+        'modifier_ids': modifierIds,
+        'attr_ids': attrIds,
+        'is_set_meal': isSetMeal,
+        'note_msg': noteMessage
+      };
+      print(jsonEncode(submitData));
+
+      Response response = await Dio().post(
+        path,
+        data: submitData,
+        options: Options(contentType: "application/json")
+      );
+
+      print(jsonDecode(response.data));
+
+      return pick(response.data).asIntOrNull();
+
+    } on DioError catch (e) {
+      throw e.response.data.toString();
+    } catch (error) {
+      print(error);
+      rethrow;
     }
 
-    return cartid;
   }
 
   Future<int> insertReservationToCart(MST_Cart cartData) async {
@@ -758,35 +798,32 @@ class LocalAPI {
   }
 
   Future<List<MSTCartdetails>> getCartItem(cartId) async {
-    Database db = DatabaseHelper.dbHelper.getDatabse();
-    //var isjoin = await CommunFun.checkIsJoinServer();
-    List<MSTCartdetails> list = [];
-    /* if (isjoin == true) {
-      var apiurl = await Configrations.ipAddress() + Configrations.cart_items;
-      var stringParams = {"cart_id": cartId};
-      var result = await APICall.localapiCall(null, apiurl, stringParams);
-      if (result["status"] == Constant.STATUS200) {
-        List<dynamic> data = result["data"];
-        list = data.length > 0
-            ? data.map((c) => MSTCartdetails.fromJson(c)).toList()
-            : [];
-      }
-    } else { */
-    String qry = " SELECT mst_cart_detail.* ,group_concat(attributes.name) as attrName ,group_concat(modifier.name) as modiName from mst_cart_detail " +
-        " LEFT JOIN mst_cart_sub_detail on mst_cart_sub_detail.cart_details_id = mst_cart_detail.id AND  (mst_cart_sub_detail.attribute_id != '' OR mst_cart_sub_detail.modifier_id != '' )" +
-        " LEFT JOIN attributes on attributes.attribute_id = mst_cart_sub_detail.attribute_id  AND  mst_cart_sub_detail.attribute_id != " +
-        " '' " +
-        " LEFT JOIN modifier on modifier.modifier_id = mst_cart_sub_detail.modifier_id AND mst_cart_sub_detail.modifier_id != " +
-        " '' " +
-        " where cart_id =" +
-        cartId.toString() +
-        " group by mst_cart_detail.id";
-    var res = await db.rawQuery(qry);
-    list = res.isNotEmpty
-        ? res.map((c) => MSTCartdetails.fromJson(c)).toList()
-        : [];
-    return list;
-    
+
+    try {
+
+      var url = await getMasterURL();
+      var path = url + '/api/marslab/cartproducts';
+
+      Response response = await Dio().get(
+        path,
+        queryParameters: {
+          'cartid': cartId
+        },
+        options: Options(contentType: 'application/json')
+      );
+
+      List body = jsonDecode(response.data);
+
+      List<MSTCartdetails> list =
+        body.isNotEmpty ? body.map((c) => MSTCartdetails.fromJson(c)).toList() : [];
+
+      return list;
+
+    } catch (error) {
+      print(error);
+      rethrow;
+    }
+
   }
 
   Future<bool> updateItemDiscount(MSTCartdetails product, int cartID,
@@ -1467,10 +1504,10 @@ class LocalAPI {
 
   Future<MST_Cart> getCartData(cartid) async {
 
-      try {
+    try {
 
       var url = await getMasterURL();
-      var path = url + '/api/marslab/cart';
+      var path = url + '/api/marslab/carts';
 
       Response response = await Dio().get(
         path,
